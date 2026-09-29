@@ -1,0 +1,135 @@
+@import "tailwindcss";
+@theme {
+  --color-honey: #ffd24c;
+  --color-leaf: #92a95e;
+  --color-cream: #fffef8;
+  --color-ink: #30392e;
+  --color-lilac: #eee5f5;
+  --color-sky: #e8f1f8;
+  --font-sans: "Nunito", "Segoe UI", sans-serif;
+}
+:root {
+  font-family: "Nunito", "Segoe UI", sans-serif;
+  color: #30392e;
+  background: #fafbf7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  font-weight: 450;
+  font-size: 14px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 360px;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+button,
+a,
+input,
+textarea,
+select {
+  outline-offset: 4px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #548344;
+}
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+h1 {
+  font-size: 32px;
+  line-height: 1.25;
+}
+h2 {
+  font-size: 23px;
+  line-height: 1.3;
+}
+h3 {
+  font-size: 16px;
+}
+h4 {
+  font-size: 14px;
+}
+p {
+  color: #7b8275;
+  line-height: 1.7;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1.5px solid #dfe4d8;
+  border-radius: 11px;
+  background: #fff;
+  padding: 12px 14px;
+  color: #30392e;
+  outline-color: #d5ab28;
+}
+textarea {
+  resize: vertical;
+  min-height: 104px;
+  line-height: 1.7;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 13px;
+  margin: 20px 0;
+}
+label small {
+  font-weight: 400;
+  color: #82897e;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #d3aa32;
+  box-shadow: 0 0 0 3px #fff4ce;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #a3a99f;
+}
+::selection {
+  background: #ffe48b;
+}
+svg {
+  flex-shrink: 0;
+}
