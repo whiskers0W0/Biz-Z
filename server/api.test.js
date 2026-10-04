@@ -9,6 +9,7 @@ process.env.JWT_SECRET = "test-only-secret-at-least-thirty-two-characters";
 process.env.MONGOMS_DOWNLOAD_DIR = path.resolve(".test-output/mongodb");
 delete process.env.GEMINI_API_KEY;
 const { app } = await import("./index.js");
+delete process.env.GEMINI_API_KEY;
 let mongo;
 let owner;
 let other;
@@ -33,6 +34,8 @@ test("accounts, validation, ownership, complete CRUD, summary invalidation, and 
   await request(app).get("/api/plans").expect(401);
   await owner
     .post("/api/auth/register")
+    .set("Host", "127.0.0.1:5174")
+    .set("Origin", "http://127.0.0.1:5174")
     .send({
       name: "Test Builder",
       email: "builder@example.test",
@@ -133,6 +136,206 @@ test("accounts, validation, ownership, complete CRUD, summary invalidation, and 
     .set("Origin", "https://untrusted.example")
     .send({ name: "Blocked" })
     .expect(403);
+  const beforeRestore = await owner.get(`/api/plans/${planId}`).expect(200);
+  const versions = beforeRestore.body.sections[0].revisions;
+  assert.ok(versions.length >= 2);
+  await owner
+    .put(`/api/plans/${planId}/sections/0`)
+    .send({ answers: [], draft: versions[0].draft, status: "draft" })
+    .expect(200);
+  const restored = await owner.get(`/api/plans/${planId}`).expect(200);
+  assert.equal(restored.body.sections[0].draft, versions[0].draft);
+  assert.equal(restored.body.sections[0].revisions.length, versions.length + 1);
+  await request(app).get("/api/not-a-route").expect(404);
+  await owner
+    .put(`/api/plans/${planId}`)
+    .send({ name: "Updated bakery", description: "A revised concept" })
+    .expect(200);
+  await owner
+    .put(`/api/plans/${planId}/finance`)
+    .send({
+      currency: "PHP",
+      capitalMinor: 100000,
+      priceMinor: 1000,
+      variableMinor: 400,
+      units: 100,
+    })
+    .expect(200);
+  const cost = await owner
+    .post(`/api/plans/${planId}/budget-items`)
+    .send({
+      name: "Rent",
+      category: "monthly",
+      amountMinor: 10000,
+      quantity: 1,
+    })
+    .expect(201);
+  await other.get(`/api/plans/${planId}/budget-items`).expect(404);
+  await owner
+    .get(`/api/plans/${planId}/budget-items/${cost.body._id}`)
+    .expect(200);
+  await owner
+    .put(`/api/plans/${planId}/budget-items/${cost.body._id}`)
+    .send({
+      name: "Rent",
+      category: "monthly",
+      amountMinor: 20000,
+      quantity: 1,
+    })
+    .expect(200);
+  const totals = await owner
+    .get(`/api/plans/${planId}/financial-summary`)
+    .expect(200);
+  assert.equal(totals.body.profit, 40000);
+  await owner.get(`/api/plans/${planId}/break-even`).expect(200);
+  await owner
+    .post(`/api/plans/${planId}/scenario-comparisons`)
+    .send({ units: [0, 100, 200] })
+    .expect(200);
+  await owner
+    .post(`/api/plans/${planId}/budget-items`)
+    .send({
+      name: "Invalid",
+      category: "monthly",
+      amountMinor: -1,
+      quantity: 1,
+    })
+    .expect(400);
+  const task = await owner
+    .post(`/api/plans/${planId}/tasks`)
+    .send({ title: "Launch", dueDate: "2026-09-30", done: false })
+    .expect(201);
+  const taskStats = await owner
+    .get(`/api/plans/${planId}/task-summary?today=2026-10-01`)
+    .expect(200);
+  assert.equal(taskStats.body.overdue, 1);
+  await owner
+    .put(`/api/plans/${planId}/tasks/${task.body._id}`)
+    .send({ title: "Launch", dueDate: "2026-09-30", done: true })
+    .expect(200);
+  await owner.get("/api/profiles/me/idea-matches").expect(200);
+  await owner.get("/api/ideas").expect(200);
+  await owner.get("/api/ideas/not-an-id").expect(404);
+  const originalFetch = globalThis.fetch;
+  process.env.GEMINI_API_KEY = "test-key";
+  let prompt = "";
+  globalThis.fetch = async (_url, options) => {
+    prompt = JSON.parse(options.body).contents[0].parts[0].text;
+    return {
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    text: "Here is your tailored draft.",
+                    options: [],
+                    draft: "A small bakery serving local families.",
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    };
+  };
+  try {
+    const generated = await owner
+      .post(`/api/plans/${planId}/sections/0/zee`)
+      .send({ message: "Draft from my idea" })
+      .expect(200);
+    assert.equal(
+      generated.body.plan.sections[0].draft,
+      "A small bakery serving local families.",
+    );
+    assert.equal(generated.body.plan.sections[0].status, "draft");
+    assert.equal(generated.body.plan.messages.at(-1).section, 0);
+    assert.ok(generated.body.plan.messages.at(-1)._id);
+    await owner
+      .post(`/api/plans/${planId}/sections/1/zee`)
+      .send({ message: "Start this section" })
+      .expect(200);
+    assert.ok(!prompt.includes('"text":"Draft from my idea"'));
+    await other
+      .post(`/api/plans/${planId}/sections/0/zee`)
+      .send({ message: "Change it" })
+      .expect(404);
+    const suggestion = {
+      name: "Bakery",
+      description: "Local bread",
+      why: "Baking skills",
+      needs: "Oven",
+      challenge: "Test demand",
+      tags: ["Food"],
+      skills: ["Baking"],
+      capital: 500,
+      hours: 5,
+      currency: "PHP",
+      score: 999,
+    };
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify([
+                    suggestion,
+                    {
+                      ...suggestion,
+                      name: "Big bakery",
+                      capital: 50000,
+                      hours: 80,
+                    },
+                  ]),
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    });
+    const matches = await owner
+      .post("/api/ideas")
+      .send({ exclude: [] })
+      .expect(200);
+    assert.equal(matches.body[0].name, "Bakery");
+    assert.equal(matches.body[0].score, 100);
+    assert.equal(matches.body[1].score, 65);
+    const more = await owner
+      .post("/api/ideas")
+      .send({ exclude: ["Bakery"] })
+      .expect(200);
+    assert.deepEqual(
+      more.body.map((i) => i.name),
+      ["Big bakery"],
+    );
+    await owner.post("/api/ideas").send({ exclude: "invalid" }).expect(400);
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: "invalid JSON" }] } }],
+      }),
+    });
+    await owner
+      .post(`/api/plans/${planId}/sections/0/zee`)
+      .send({ message: "Make it shorter" })
+      .expect(502);
+    await owner.post("/api/ideas").send({}).expect(502);
+    const unchanged = await owner.get(`/api/plans/${planId}`).expect(200);
+    assert.equal(
+      unchanged.body.sections[0].draft,
+      "A small bakery serving local families.",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.GEMINI_API_KEY;
+  }
   await owner.delete(`/api/plans/${planId}`).expect(200);
   await owner.get(`/api/plans/${planId}`).expect(404);
   await owner
@@ -149,4 +352,77 @@ test("accounts, validation, ownership, complete CRUD, summary invalidation, and 
     .post("/api/auth/login")
     .send({ email: "builder@example.test", password: "test-password-123" })
     .expect(200);
+});
+
+test("adviser chats persist, isolate owners and never edit plans", async () => {
+  const plan = (
+    await owner
+      .post("/api/plans")
+      .send({ name: "Adviser context", description: "A small shop" })
+      .expect(201)
+  ).body;
+  await request(app).get("/api/conversations").expect(401);
+  await other.post("/api/conversations").send({ plan: plan._id }).expect(404);
+  const chat = (
+    await owner.post("/api/conversations").send({ plan: plan._id }).expect(201)
+  ).body;
+  const url = `/api/conversations/${chat._id}`;
+  await other.get(url).expect(404);
+  await other.put(url).send({ title: "Stolen" }).expect(404);
+  await other.delete(url).expect(404);
+  await other
+    .post(url + "/messages")
+    .send({ message: "Hello" })
+    .expect(404);
+  await owner.put(url).send({ title: "" }).expect(400);
+  const originalFetch = globalThis.fetch;
+  process.env.GEMINI_API_KEY = "test-key";
+  try {
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: "Try speaking with five potential customers." }],
+            },
+          },
+        ],
+      }),
+    });
+    const reply = (
+      await owner
+        .post(url + "/messages")
+        .send({ message: "How can I find customers?" })
+        .expect(200)
+    ).body;
+    assert.equal(reply.messages.length, 2);
+    assert.equal(reply.title, "How can I find customers?");
+    assert.equal(
+      (await owner.get(url).expect(200)).body.messages[1].text,
+      "Try speaking with five potential customers.",
+    );
+    assert.deepEqual(
+      (await owner.get(`/api/plans/${plan._id}`).expect(200)).body,
+      plan,
+    );
+    delete process.env.GEMINI_API_KEY;
+    await owner
+      .post(url + "/messages")
+      .send({ message: "More advice" })
+      .expect(503);
+    assert.equal((await owner.get(url)).body.messages.length, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.GEMINI_API_KEY;
+  }
+  await owner.put(url).send({ title: "Finding customers" }).expect(200);
+  assert.equal(
+    (await owner.get("/api/conversations")).body[0].title,
+    "Finding customers",
+  );
+  assert.equal((await other.get("/api/conversations")).body.length, 0);
+  await owner.delete(url).expect(200);
+  await owner.get(url).expect(404);
+  await owner.delete(`/api/plans/${plan._id}`).expect(200);
 });

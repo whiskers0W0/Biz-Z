@@ -29,3 +29,6 @@ dist-ssr
 
 .npm-cache
 .test-output
+
+# Local verification screenshots
+docs/screenshots/

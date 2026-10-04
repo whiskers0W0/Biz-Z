@@ -1,79 +1,95 @@
 # Biz-Z
 
-A React + Tailwind business planning app with Express, MongoDB, and optional Gemini assistance.
+Biz-Z helps first-time founders build a business plan in eight manageable sections. Zee, the Gemini assistant, leads short interviews, drafts prose, and revises it on request. Money lab calculates from saved inputs; AI does not perform the authoritative arithmetic.
 
-## Run locally
+## Team
 
-1. Install Node.js 22.12+ (Node 24 recommended).
-2. Run `npm install`.
-3. Run `npm run dev` and open http://127.0.0.1:5173.
+User-reported focus areas (not a claim of commit ownership):
 
-The frontend and API run together. Without credentials, the app offers a clearly labeled local demo. Demo plans and profiles persist in this browser's local storage. Demo idea cards are templates, not Gemini output.
+| Member | Focus |
+| --- | --- |
+| Ann Nicole P. Adraneda | Database and backend |
+| Rhianna Mikaella Gomez | Backend |
+| Lorenzo Carlos R. Tan | Frontend |
 
-## Enable accounts, MongoDB, and Gemini
+See [team responsibilities](docs/TEAM.md) for proposed review/defense assignments. Every member must understand and verify the code they present. Do not fabricate contribution history.
 
-Copy `.env.example` to `.env` in the project root. Configure:
+## Setup
 
-- `MONGODB_URI`: your local MongoDB or Atlas connection string.
-- `JWT_SECRET`: a randomly generated secret of at least 32 characters.
-- `GEMINI_API_KEY`: your Google AI Studio key. Keep it server-side; never use a VITE_ variable for this key.
-- `GEMINI_MODEL`: a model available to your key (default: gemini-2.5-flash).
+1. Install Node.js 22.12 or newer and run `npm install`.
+2. Copy `.env.example` to `.env` if no local configuration exists. Do not overwrite an existing file containing credentials.
+3. Set `MONGO_URI` to your MongoDB Atlas connection string, with database `bizz`. Legacy `MONGODB_URI` remains supported.
+4. Set `JWT_SECRET` to a random secret of at least 32 characters. Generate one locally with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
+5. Optionally set `GEMINI_API_KEY` and `GEMINI_MODEL` (the local configuration uses `gemini-flash-latest`). Keys are used only by Express.
+6. Run `npm run seed` to upsert six illustrative catalog ideas. This does not delete user records or create accounts.
+7. Run `npm run dev` and open the address Vite prints, normally `http://127.0.0.1:5173`.
 
-Restart the development server after changes. Register an account in the app. Account plans are isolated from local demo plans and from other users' plans. A MongoDB connection and JWT secret are required for accounts; Gemini is optional for manual planning.
+Atlas requires a running cluster, valid database credentials and the connecting machine's public IP in its access list. Optional `DNS_SERVERS` changes DNS for the Node process only. It cannot fix blocked TLS or Atlas access restrictions. Never disable TLS verification.
 
-`GET /api/health` reports configuration availability without exposing secrets. Gemini availability means a key is configured, not that its validity or quota has been verified.
+`CLIENT_ORIGINS` is a comma-separated allowlist for direct browser API access. The Vite proxy preserves the browser Host for same-origin checks. `PORT` defaults to 3001. `API_TARGET` optionally overrides the Vite proxy target for isolated testing. Do not put secrets in `VITE_` variables.
 
-## Implemented flow
+Build: `npm run build`. Check: `npm run lint` and `npm test`. Production: set `NODE_ENV=production`, run `npm start`; Express serves `dist` and the API on the configured loopback port. External deployment is not configured by this project.
 
-- Responsive journey dashboard with the original Zee bee mascot.
-- Five-step onboarding: exactly five interests and five traits, skills/time, budget/location, review.
-- Three personalized Gemini ideas for signed-in users, or labeled template suggestions in demo mode.
-- Bring your own business idea.
-- Eight planning sections with answers, editable drafts, explicit saves, and review status.
-- Executive summary unlocks after the first six sections are reviewed. Updating these sections marks an existing summary as needing review.
-- Context-aware Gemini chat; suggestions are only applied to drafts on user action.
-- Monthly financial calculator with deterministic arithmetic and explicit assumptions.
-- Plan preview and downloadable PDF. Built-in PDF font currently targets Latin text; non-Latin scripts require an embedded Unicode font.
-- Account registration/sign-in/sign-out, plan listing, creation, retrieval, section updates, deletion with confirmation.
+## Features and data processing
 
-## API
+- Public landing page and 13 routed content views, plus not-found handling.
+- Exactly five interests and five traits; RHF/Zod forms and a saved profile.
+- Account sessions in HttpOnly cookies, bcrypt password hashing and owner-scoped plans.
+- Full plan CRUD, separate section interviews, generated draft revisions and restoration history.
+- Automatic Zee introduction for empty sections; short answers, suggested buttons, essay generation and revisions.
+- Money lab: startup/monthly line totals, funding gap, revenue, expenses, operating profit, margin, runway and break-even.
+- Sales scenarios at 70%, 100% and 130% of saved sales volume, holding saved unit costs/prices constant.
+- Catalog matching: interest overlap 40 points, skills 25, affordable capital 20, available time 15; missing inputs earn no points. Scores are not success probabilities.
+- Launch tasks with CRUD, completion percentage, overdue calculation and valid calendar dates.
+- Loading screens, operation modals, deletion confirmations, unsaved editor navigation protection, shared modal scroll locking.
+- Review/export as PDF. Executive summary unlocks after sections 1–6 are reviewed; changing those sections invalidates summary review.
 
-| Method | Endpoint                       | Purpose                                  |
-| ------ | ------------------------------ | ---------------------------------------- |
-| POST   | /api/auth/register             | Register and set HttpOnly session cookie |
-| POST   | /api/auth/login                | Sign in                                  |
-| POST   | /api/auth/logout               | Clear session cookie                     |
-| GET    | /api/me                        | Current user                             |
-| PUT    | /api/profile                   | Validate and save profile                |
-| GET    | /api/plans                     | List own plans                           |
-| POST   | /api/plans                     | Create a plan                            |
-| GET    | /api/plans/:id                 | Read own plan                            |
-| PUT    | /api/plans/:id/sections/:index | Save section (index 0–7)                 |
-| DELETE | /api/plans/:id                 | Delete own plan                          |
-| POST   | /api/ideas                     | Generate three Gemini ideas              |
-| POST   | /api/plans/:id/chat            | Send context to Gemini                   |
-
-The API validates input with Zod, hashes passwords with bcrypt, checks plan ownership, limits auth/AI requests, and rejects cross-origin writes. Never commit `.env`.
-
-## Checks
-
-- `npm run build`: type-check and production build.
-- `npm run lint`: frontend lint.
-- `npm test`: integration test against an isolated ephemeral MongoDB instance, including auth, profile validation, CRUD, ownership, summary rules, and missing-key fallback. First run downloads the MongoDB test binary into `.test-output/mongodb`; it does not use your application database.
-
-## Production
-
-Run `npm run build`, set `NODE_ENV=production`, then `npm start`. Express serves the built frontend and API on port 3001 by default. Use an HTTPS reverse proxy on the same host; production cookies are Secure. The API listens on loopback. For container deployment, deliberately configure the listening host and your network ingress. Set credentials in the deployment environment.
+Money is stored as integer minor units (100 minor units = one displayed currency unit). Per-unit amounts are bounded to 1,000,000 currency units, quantities to 10,000, monthly sales to 1,000,000 and nested resources to 200 per type/plan. Arithmetic assumes a single currency and one primary product/service. Changing currency relabels values; it does not convert them. No taxes, debt payments, exchange-rate feeds, stock management or verified legal research are included.
 
 ## Structure
 
-- `src/App.tsx`: workspace navigation, session, plan state and data persistence.
-- `src/components.tsx`: shared buttons, dialogs, heading, original SVG bee mascot.
-- `src/Dashboard.tsx`: journey dashboard and progress.
-- `src/Onboarding.tsx`: profile collection and idea exploration.
-- `src/Editor.tsx`: section editor, Gemini chat, finance calculator, PDF export, authentication forms.
-- `src/data.ts`: shared types, section metadata, demo templates, API client.
-- `src/index.css`, `src/App.css`: Tailwind integration and consistent responsive design system.
-- `server/index.js`: Express routes and Gemini integration.
-- `server/models.js`: MongoDB/Mongoose models.
-- `server/api.test.js`: isolated API integration coverage.
+- `client/src/`: React components, routed views, `schemas/`, `hooks/`, and one Axios service.
+- `server/index.js`: environment, DNS, database connection/retry and server startup.
+- `server/app.js`: Express configuration, middleware, API mounting and static hosting.
+- `server/routes/`: authenticated API and related-resource routers.
+- `server/models/`: five Mongoose collections, embedded section/version schemas.
+- `server/services/`: deterministic computations and catalog fixtures.
+- `server/middleware/`: request logging, origin/CORS handling and JSON error mapping.
+- `docs/`: rubric audit, API examples, defense walkthrough and team assignments.
+
+Database relationships: User → Plan; Plan → BudgetItem and LaunchTask; Plan optionally references BusinessIdea when chosen from the catalog. Sections, messages and draft versions are embedded in Plan.
+
+## API and demonstration
+
+See [all 35 endpoints with example requests/responses](docs/API.md), [defense walkthrough](docs/DEFENSE.md), and [requirements audit](docs/REQUIREMENTS.md).
+
+For a disposable local demonstration without Atlas:
+
+1. Run `node server/qa.js` (ephemeral MongoDB on a temporary local port, API at 3002).
+2. In a second PowerShell terminal run `$env:API_TARGET='http://127.0.0.1:3002'; npx vite --port 5175 --strictPort`.
+3. Open `http://127.0.0.1:5175`. Use `demo@bizz.test` / `Demo-only-123!` (test-only credentials).
+4. Stop both processes afterward. This database is disposable; it is not Atlas and does not prove persistence across restarting QA.
+
+The QA fixture includes an account, bakery plan, two costs, a launch task and catalog ideas. Gemini is disabled in QA. API tests mock Gemini responses and use a separate ephemeral MongoDB; no live user data is read or modified.
+
+## Limitations and submission checks
+
+- Live Atlas was previously verified but the latest connection attempt failed during TLS negotiation. Reverify the user's network/Atlas access before presenting live persistence; do not claim the isolated QA run is Atlas.
+- Live Gemini worked earlier; current feature tests use mocked responses. Check the configured model and quota before the defense.
+- Browser-only demo plans are separate from authenticated plans. Money lab and tasks require an account.
+- AI may make mistakes; generated assumptions and legal details require human review. It does not verify market facts.
+- Concurrent edits in multiple tabs are not conflict-merged. Version history starts when a draft is first changed with revision support enabled.
+- PDF's built-in font targets Latin text; non-Latin scripts need an embedded font.
+- The course document conflicts between one repository and separate client/server repositories. Instructor clarification remains pending. No commits or publication were performed by this implementation pass.
+
+## Asset organization
+
+Frontend entry: `client/index.html`. Public assets: `client/public/`. Imported artwork: `client/src/assets/brand/`, `mascot/`, and `illustrations/`. Root package/config files run both client and server; existing npm commands are unchanged. See `docs/STRUCTURE.md`.
+
+## Screenshots
+
+Captured in the isolated QA workspace with disposable sample data; these do not prove live Atlas availability.
+
+![Money lab with saved inputs and computed results](docs/screenshots/money-lab.png)
+
+![Restored section draft with three retained versions](docs/screenshots/restored-draft.png)

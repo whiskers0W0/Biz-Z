@@ -112,3 +112,19 @@ The current routed flow already supplies 11 distinct views. Add Money lab and La
 Show the landing page → choose or enter an idea → trigger a visible validation error → create a plan → add related financial rows → demonstrate arithmetic and a zero-contribution edge case → add an overdue task → attempt an invalid status transition and resolve its blockers → refresh to prove MongoDB persistence → retrieve an invalid ID to show JSON 404 → preview/export. Each member explains an actual part they implemented and can answer questions about teammates' code.
 
 No additional payments, uploads, admin role system, or deployment work is proposed before the mandatory rubric gaps are closed.
+
+## Implementation checkpoint — 2 October 2026
+
+The core proposal is now implemented: Money lab, financial summary/break-even/scenarios, persistent budget items, launch tasks and date summaries, catalog matching, five collections and expanded CRUD. Consult REQUIREMENTS.md for verified evidence and remaining live Atlas/Git/defense blockers; this original proposal is not itself verification.
+
+## Location research extension
+
+Requested 3 October 2026. Not implemented or verified yet. No Maps browser/server key was configured when checked. Provider setup is pending the user's response; no billing, API activation or external publication authorized by this document.
+
+- Onboarding: accessible place autocomplete for city/area; manual location entry remains available when service is unavailable.
+- Per plan: confirm a business location, optionally choose a map pin. Do not silently reuse a profile city as an exact business address. Support online/mobile businesses without requiring an exact pin.
+- Research: user chooses business category and radius; fetch potential competitors on demand, show source links and retrieval time, and explain that coverage is incomplete. Nearby businesses are candidate competitors, not automatically direct competitors.
+- SWOT: Zee uses user-confirmed strengths/weaknesses and distinguishes sourced local observations from inferred opportunities/threats. No claims about foot traffic, revenue, unmet demand or competitor quality without evidence.
+- Do not alter the current 100-point profile-fit score with an arbitrary location score. Show local evidence separately until a defensible formula and data coverage are established.
+- Google integration requires Maps JavaScript API, Places API (New), billing and appropriately restricted keys. Confirm current product terms for content retention and AI processing before sending Places content to Gemini. Preserve Google attribution. Public terms/privacy pages are required before public release.
+- Validation plan: autocomplete keyboard selection, map selection, manual fallback, per-plan location isolation, radius limits, empty/failed results, no accidental queries while typing, attribution, and source/assumption separation.
