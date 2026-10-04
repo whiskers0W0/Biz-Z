@@ -5,7 +5,7 @@ Confirmed focus areas supplied by Ann Nicole: Ann Nicole P. Adraneda works on da
 | Member | Suggested work to own and verify | Defense explanation |
 | --- | --- | --- |
 | Ann Nicole P. Adraneda | Atlas setup, five schemas/relationships, seed data, stored minor-unit amounts, owner references, persistence and deletion checks | Explain User → Plan → costs/tasks, idea references, validation, timestamps, indexes and why derived totals are not stored |
-| Rhianna Mikaella Gomez | Routers, authentication, HTTP errors, CORS/origin checks, calculations, Gemini response validation and backend tests | Trace one request through Express and explain normal/edge cases for break-even, runway, matching and overdue tasks |
+| Rhianna Mikaella R. Gomez | Routers, authentication, HTTP errors, CORS/origin checks, calculations, Gemini response validation and backend tests | Trace one request through Express and explain normal/edge cases for break-even, runway, matching and overdue tasks |
 | Lorenzo Carlos R. Tan | React routes/components, RHF/Zod forms, Axios integration, responsive layout, loader/modal interactions, history and PDF flow | Explain props/state/hooks, controlled inputs, loading/error states, dirty drafts and mobile interaction |
 
 All three: review AI-assisted code, run the app independently, make authentic commits for work actually performed, and explain each other's areas. Record actual refinements/tests and commit references before submission. No retroactive or fabricated history.
