@@ -149,7 +149,7 @@ test("accounts, validation, ownership, complete CRUD, summary invalidation, and 
   await request(app).get("/api/not-a-route").expect(404);
   await owner
     .put(`/api/plans/${planId}`)
-    .send({ name: "Updated bakery", description: "A revised concept" })
+    .send({ name: "Updated bakery", description: "Small-batch bread" })
     .expect(200);
   await owner
     .put(`/api/plans/${planId}/finance`)
@@ -254,6 +254,7 @@ test("accounts, validation, ownership, complete CRUD, summary invalidation, and 
     assert.equal(generated.body.plan.sections[0].status, "draft");
     assert.equal(generated.body.plan.messages.at(-1).section, 0);
     assert.ok(generated.body.plan.messages.at(-1)._id);
+    await owner.put(`/api/plans/${planId}/sections/0`).send({answers:[],draft:"A small bakery serving local families.",status:"reviewed"}).expect(200);
     await owner
       .post(`/api/plans/${planId}/sections/1/zee`)
       .send({ message: "Start this section" })
@@ -425,4 +426,82 @@ test("adviser chats persist, isolate owners and never edit plans", async () => {
   await owner.delete(url).expect(200);
   await owner.get(url).expect(404);
   await owner.delete(`/api/plans/${plan._id}`).expect(200);
+});
+
+test('sections unlock in order and export requires every review', async () => {
+ const plan=(await owner.post('/api/plans').send({name:'Sequential plan'}).expect(201)).body;
+ const base=`/api/plans/${plan._id}`;
+ await owner.get(base+'/export').expect(400);
+ for(let i=1;i<8;i++) {
+  await owner.put(base+`/sections/${i}`).send({answers:[],draft:'Skipped',status:'reviewed'}).expect(400);
+ }
+ for(let i=0;i<8;i++) {
+  await owner.put(base+`/sections/${i}`).send({answers:[],draft:`Completed section ${i}`,status:'reviewed'}).expect(200);
+  await owner.get(base+'/export').expect(i===7?200:400);
+ }
+ await other.get(base+'/export').expect(404);
+ await owner.put(base+'/sections/0').send({answers:[],draft:'Changed overview',status:'draft'}).expect(200);
+ await owner.get(base+'/export').expect(400);
+ await owner.put(base+'/sections/7').send({answers:[],draft:'Blocked again',status:'reviewed'}).expect(400);
+ await owner.delete(base).expect(200);
+});
+
+test('work preferences persist separately from legacy skills', async () => {
+ const profile=(await owner.get('/api/me').expect(200)).body.profile;
+ await owner.put('/api/profile').send({...profile,workStyles:['From home','Working solo']}).expect(200);
+ const saved=(await owner.get('/api/me').expect(200)).body.profile;
+ assert.deepEqual(saved.workStyles,['From home','Working solo']);
+ assert.equal(saved.skills,profile.skills);
+ await owner.put('/api/profile').send({...profile,workStyles:Array(6).fill('From home')}).expect(400);
+});
+
+test('business detail revisions update drafts atomically and retain history', async () => {
+ const plan=(await owner.post('/api/plans').send({name:'Old bakery',description:'Bread shop'}).expect(201)).body;
+ const base=`/api/plans/${plan._id}`;
+ await owner.put(base+'/sections/0').send({answers:[],draft:'Old bakery sells bread.',status:'reviewed'}).expect(200);
+ await owner.put(base).send({name:'New bakery',description:'Bread shop'}).expect(200);
+ let updated=(await owner.get(base)).body;
+ assert.equal(updated.sections[0].draft,'New bakery sells bread.');
+ assert.equal(updated.sections[0].status,'reviewed');
+ assert.equal(updated.sections[0].revisions[0].draft,'Old bakery sells bread.');
+ const oldFetch=globalThis.fetch;
+ process.env.GEMINI_API_KEY='test-key';
+ try {
+  globalThis.fetch=async()=>({ok:true,json:async()=>({candidates:[{content:{parts:[{text:'[]'}]}}]})});
+  await owner.put(base).send({name:'New cafe',description:'Coffee shop'}).expect(502);
+  assert.equal((await owner.get(base)).body.description,'Bread shop');
+  globalThis.fetch=async()=>({ok:true,json:async()=>({candidates:[{content:{parts:[{text:JSON.stringify([{index:0,draft:'New cafe serves coffee.'}])}]}}]})});
+  await owner.put(base).send({name:'New cafe',description:'Coffee shop'}).expect(200);
+  updated=(await owner.get(base)).body;
+  assert.equal(updated.sections[0].draft,'New cafe serves coffee.');
+  assert.equal(updated.sections[0].status,'draft');
+  assert.equal(updated.sections[0].revisions.at(-1).source,'Business details updated');
+ } finally {globalThis.fetch=oldFetch;delete process.env.GEMINI_API_KEY;}
+ await owner.delete(base).expect(200);
+});
+
+test('plan tool suggestions use owned drafts without saving assumptions or tasks', async () => {
+ const p=(await owner.post('/api/plans').send({name:'Coffee corner',description:'Coffee takeaway'}).expect(201)).body;
+ const base=`/api/plans/${p._id}`;
+ await other.post(base+'/tool-suggestions').send({mode:'template'}).expect(404);
+ await owner.post(base+'/tool-suggestions').send({mode:'money'}).expect(400);
+ const draft='We sell coffee for PHP 80 per cup.';
+ await owner.put(base+'/sections/0').send({answers:[],draft,status:'reviewed'}).expect(200);
+ const template=(await owner.post(base+'/tool-suggestions').send({mode:'template'}).expect(200)).body;
+ assert.equal(template.tasks.length,1);
+ assert.ok(template.tasks[0].title.includes('Coffee corner'));
+ const original=globalThis.fetch;
+ process.env.GEMINI_API_KEY='test-key';
+ const mock=result=>{globalThis.fetch=async()=>({ok:true,json:async()=>({candidates:[{content:{parts:[{text:JSON.stringify(result)}]}}]})});};
+ try {
+  mock({values:[{field:'price',value:80,source:draft}]});
+  assert.equal((await owner.post(base+'/tool-suggestions').send({mode:'money'}).expect(200)).body.values[0].value,80);
+  mock({values:[{field:'price',value:80,source:'Fabricated source'}]});
+  await owner.post(base+'/tool-suggestions').send({mode:'money'}).expect(502);
+  mock({tasks:[{title:'Test coffee recipes',reason:'Products for Coffee corner'}]});
+  await owner.post(base+'/tool-suggestions').send({mode:'launch'}).expect(200);
+  assert.equal((await owner.get(base+'/tasks')).body.length,0);
+  assert.equal((await owner.get(base+'/finance')).body.priceMinor,0);
+ } finally {globalThis.fetch=original;delete process.env.GEMINI_API_KEY;}
+ await owner.delete(base).expect(200);
 });

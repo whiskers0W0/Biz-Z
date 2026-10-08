@@ -63,3 +63,11 @@ All routes require a signed-in account and only access its conversations.
 | POST | /api/conversations/:conversationId/messages | Generate and save a user/adviser exchange |
 
 Messages accept 1–4000 characters. Chats hold up to 200 messages; Gemini receives the latest 20 messages and optional current plan drafts as context. A failed generation does not append an exchange. Concurrent updates return 409. Plan contents are never changed by these endpoints.
+
+### Sequential planning and export
+
+Section update and section Zee requests require every preceding section to be reviewed (400 otherwise). GET /api/plans/:id/export returns the owned plan only when all eight sections have nonempty reviewed drafts, otherwise 400. Another account receives 404. The PDF interface uses this validated snapshot for signed-in users.
+
+### Plan-based tool suggestions
+
+POST /api/plans/:planId/tool-suggestions accepts mode money, launch or template. Money returns values with exact supporting draft quotes; launch returns AI task titles and reasons; template creates suggestions from existing drafted sections without AI. Suggestions do not persist changes. Missing drafts return 400 for AI modes, malformed/unsupported output returns 502, and another owner's plan returns 404. Users review and save through existing finance/task endpoints.

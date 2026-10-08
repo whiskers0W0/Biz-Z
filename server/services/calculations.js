@@ -86,6 +86,9 @@ export function matchIdeas(profile, ideas) {
       const skills = idea.skills.filter((s) =>
         (profile.skills || "").toLowerCase().includes(s.toLowerCase()),
       );
+      const preferences = (idea.workStyles || []).filter(s => (profile.workStyles || []).includes(s));
+      const usePreferences = !!profile.workStyles?.length;
+      const fit = usePreferences ? preferences.length / Math.max((idea.workStyles || []).length, 1) : skills.length / Math.max(idea.skills.length, 1);
       const budget =
         profile.currency === idea.currency &&
         Number.isFinite(profile.capital) &&
@@ -94,7 +97,7 @@ export function matchIdeas(profile, ideas) {
         Number.isFinite(profile.hours) && profile.hours >= idea.hours;
       const score = Math.round(
         (40 * tags.length) / Math.max(idea.tags.length, 1) +
-          (25 * skills.length) / Math.max(idea.skills.length, 1) +
+          25 * fit +
           (budget ? 20 : 0) +
           (time ? 15 : 0),
       );
@@ -103,7 +106,7 @@ export function matchIdeas(profile, ideas) {
         score,
         reasons: [
           `${tags.length} matching interests`,
-          `${skills.length} matching skills`,
+          usePreferences ? `${preferences.length} matching work preferences` : `${skills.length} matching skills`,
           budget
             ? "Within your stated capital"
             : "Budget needs checking (same currency required)",
