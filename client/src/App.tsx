@@ -25,6 +25,7 @@ import {
   Flower2,
   House,
   LogOut,
+  Lock,
   Menu,
   Plus,
   Settings,
@@ -78,11 +79,13 @@ function App() {
   const sectionIndex = Number(params.sectionIndex ?? 0);
   const validSection =
     Number.isInteger(sectionIndex) && sectionIndex >= 0 && sectionIndex < 8;
-  const summaryLocked =
-    sectionIndex === 6 &&
-    !active?.sections.slice(0, 6).every((s) => s.status === "reviewed");
+  const sectionLocked =
+    sectionIndex > 0 &&
+    !active?.sections.slice(0, sectionIndex).every((s) => s.status === "reviewed");
   const completed =
     active?.sections.filter((s) => s.status === "reviewed").length || 0;
+  const planComplete = !!active && active.sections.length === 8 && active.sections.every(s => s.status === "reviewed" && s.draft.trim());
+  const lockedTool = ["review", "money", "launch"].includes(page) && !!active && !planComplete;
   const isDemo = !user;
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +124,9 @@ function App() {
     }
   }, [plans, profile, user]);
   function navigate(next: Page) {
+    if (["review", "money", "launch"].includes(next) && !planComplete) {
+      setToast("Review all 8 sections to unlock this tool."); return;
+    }
     if (dirty) {
       setToast("Save your draft before leaving this section.");
       return;
@@ -199,11 +205,11 @@ function App() {
       return;
     }
     if (
-      i === 6 &&
-      !active.sections.slice(0, 6).every((s) => s.status === "reviewed")
+      i > 0 &&
+      !active.sections.slice(0, i).every((s) => s.status === "reviewed")
     ) {
       setToast(
-        "Review the first six sections to unlock your executive summary.",
+        "Review the earlier sections to unlock this part.",
       );
       return;
     }
@@ -382,9 +388,9 @@ function App() {
       </>
     ),
     editor:
-      active && validSection && !summaryLocked ? (
+      active && validSection && !sectionLocked ? (
         <Editor
-          key={`${active._id}-${sectionIndex}`}
+          key={`${active._id}-${sectionIndex}-${active.name}-${active.description}`}
           plan={active}
           index={sectionIndex}
           profile={profile}
@@ -402,11 +408,11 @@ function App() {
           }}
           onSection={(i) => {
             if (
-              i === 6 &&
-              !active.sections.slice(0, 6).every((s) => s.status === "reviewed")
+              i > 0 &&
+      !active.sections.slice(0, i).every((s) => s.status === "reviewed")
             ) {
               setToast(
-                "Review the first six sections to unlock your executive summary.",
+                "Review the earlier sections to unlock this part.",
               );
               return;
             }
@@ -421,11 +427,11 @@ function App() {
             )
           }
         />
-      ) : summaryLocked ? (
+      ) : sectionLocked ? (
         <section className="empty-state mt-8">
           <Bee />
-          <h2>Your summary comes after the groundwork.</h2>
-          <p>Review sections 1–6 first, then bring the whole story together.</p>
+          <h2>This section is locked.</h2>
+          <p>Review each earlier section to continue.</p>
           <Button onClick={() => navigate("dashboard")}>
             Back to my journey
           </Button>
@@ -435,6 +441,7 @@ function App() {
       ),
     review: active ? (
       <Review
+        isDemo={isDemo}
         plan={active}
         onBack={() => navigate("dashboard")}
         onEdit={openSection}
@@ -469,7 +476,7 @@ function App() {
               <p>Let’s discover what makes you, you.</p>
             )}
           </div>
-          <h3>Your working style</h3>
+          <h3>Your personality</h3>
           <div className="chips">
             {profile.traits.map((t) => (
               <span className="pill lavender" key={t}>
@@ -477,6 +484,8 @@ function App() {
               </span>
             ))}
           </div>
+          <h3>How you like to work</h3>
+          <div className="chips">{(profile.workStyles || []).map(t => <span className="pill lavender" key={t}>{t}</span>)}</div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={() => navigate("onboarding")}>
               Edit my profile <ArrowRight size={17} />
@@ -529,7 +538,7 @@ function App() {
         />
       )}
       {page === "landing" ? (
-        <Outlet context={views} />
+        lockedTool ? <section className="empty-state tool-locked-page"><Lock size={32} /><h2>Complete your business plan first</h2><p>Review all 8 sections to unlock this page.</p><p>{completed} of 8 reviewed</p><Button onClick={()=>openSection(Math.max(0,active!.sections.findIndex(s=>s.status !== "reviewed")))}>Continue my plan</Button></section> : <Outlet context={views} />
       ) : (
         <>
           <aside className={`sidebar ${mobileMenu ? "open" : ""}`}>
@@ -551,8 +560,8 @@ function App() {
               {nav.map(({ page: p, name, icon: Icon }) => (
                 <button
                   key={p}
-                  onClick={() => navigate(p)}
-                  className={`nav-item ${page === p || (p === "plans" && ["editor", "review"].includes(page)) ? "active" : ""}`}
+                  onClick={() => navigate(p === "ideas" ? "start" : p)}
+                  className={`nav-item ${page === p || (p === "ideas" && ["start", "onboarding"].includes(page)) || (p === "plans" && ["editor", "review"].includes(page)) ? "active" : ""}`}
                 >
                   <Icon size={21} />
                   {name}
@@ -659,7 +668,7 @@ function App() {
                 <div className="demo-line">
                   <span>
                     <span className="status-dot" />
-                    Local demo · your progress stays in this browser
+                    Demo mode · saved on this device
                   </span>
                   <button onClick={() => setAuthMode("register")}>
                     Save with an account <ArrowRight size={13} />
@@ -694,10 +703,10 @@ function App() {
                           ? "current"
                           : ""
                       }
-                      disabled={i > 1 && !active}
+                      disabled={(i > 1 && !active) || (step.id === "review" && !planComplete)}
                       onClick={() => navigate(step.id)}
                     >
-                      <span>{i + 1}</span>
+                      <span>{step.id === "review" && !planComplete ? <Lock size={14} /> : i + 1}</span>
                       {step.label}
                     </button>
                   ))}
@@ -723,17 +732,18 @@ function App() {
                       {[
                         ["Overview", ""],
                         ["Build plan", "/sections/" + sectionIndex],
+                        ["Review & export", "/review"],
                         ["Money lab", "/money"],
                         ["Launch checklist", "/launch"],
-                        ["Review & export", "/review"],
-                      ].map(([label, suffix]) => (
+                      ].map(([label, suffix]) => (!planComplete && ["/review", "/money", "/launch"].includes(suffix) ? <button type="button" className="plan-tool is-locked" disabled key={label} title="Review all 8 sections to unlock"><Lock size={15} aria-hidden="true" />{label}<span className="sr-only">Locked until all sections are reviewed</span></button> : (
                         <NavLink key={label} end={suffix === ""} to={"/plans/" + active._id + suffix}
                           className={({isActive}) => "plan-tool" + ((isActive || (label === "Build plan" && page === "editor")) ? " is-active" : "")}
                           aria-current={label === "Build plan" && page === "editor" ? "page" : undefined}>
                           {label}
                         </NavLink>
-                      ))}
+                      )))}
                     </nav>
+                    {!planComplete && <p className="tool-lock-note"><Lock size={14} /> {completed}/8 reviewed · Finish all sections to unlock.</p>}
                   </section>
                 )}
               {connectionError && (
@@ -753,13 +763,6 @@ function App() {
                 <Outlet context={views} />
               )}
             </main>
-            <footer className="app-footer">
-              <span>Built for your next big thing.</span>
-              <span>
-                Made with a little ambition{" "}
-                <span className="yellow-text">✦</span>
-              </span>
-            </footer>
           </div>
         </>
       )}
@@ -795,7 +798,7 @@ function App() {
           setMode={setAuthMode}
           onClose={() => setAuthMode(null)}
           onSuccess={async (u) => {
-            const saved = await api<Plan[]>("/plans");
+            const [saved] = await Promise.all([api<Plan[]>("/plans"), new Promise(resolve => setTimeout(resolve, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900))]);
             setUser(u);
             setProfile({ ...emptyProfile, ...u.profile });
             setPlans(saved);

@@ -5,7 +5,6 @@ import {
   Flower2,
   Lock,
   MessageCircle,
-  ShieldCheck,
   Sparkles,
   Target,
   Trophy,
@@ -35,12 +34,11 @@ export function Dashboard({
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">A LITTLE AMBITION GOES A LONG WAY</div>
           <h1>
-            Let’s build your next big thing
+            Your business plan
             <span className="yellow-text">.</span>
           </h1>
-          <p>Build your business, one step at a time.</p>
+          <p>Complete and review each section.</p>
         </div>
         <span className="hello-wave">✺</span>
       </div>
@@ -97,7 +95,7 @@ export function Dashboard({
               </Button>
               <span className="hero-footnote">
                 {active
-                  ? "Your next chapter is waiting."
+                  ? ""
                   : "Made for dreamers. No experience needed."}
               </span>
             </div>
@@ -130,13 +128,15 @@ export function Dashboard({
                   Your business journey{" "}
                   <span className="count-chip">8 steps</span>
                 </h2>
-                <p>One idea. A clear path. A business that’s yours.</p>
+                <p></p>
               </div>
               <button
                 className="text-button"
+                disabled={!!active && completed !== 8}
+                title={active && completed !== 8 ? "Review all 8 sections to unlock" : undefined}
                 onClick={active ? onReview : onStart}
               >
-                {active ? "Preview plan" : "Let’s begin"}
+                {active && completed !== 8 && <Lock size={14} />}{active ? "Review & export" : "Let’s begin"}
                 <ArrowRight size={15} />
               </button>
             </div>
@@ -145,14 +145,15 @@ export function Dashboard({
                 const status = active?.sections[i].status;
                 const done = status === "reviewed";
                 const locked =
-                  i === 6 &&
+                  i > 0 &&
                   !active?.sections
-                    .slice(0, 6)
+                    .slice(0, i)
                     .every((s) => s.status === "reviewed");
                 return (
                   <button
                     key={title}
                     className={`module-card module-${i} ${done ? "completed" : ""}`}
+                    disabled={locked}
                     onClick={() => openSection(i)}
                   >
                     <div className="module-top">
@@ -178,7 +179,7 @@ export function Dashboard({
                         {done
                           ? "Reviewed"
                           : locked
-                            ? "Unlocks after steps 1–6"
+                            ? `Review step ${i} to unlock`
                             : status === "draft"
                               ? "Keep building"
                               : "Ready when you are"}
@@ -190,10 +191,6 @@ export function Dashboard({
               })}
             </div>
           </section>
-          <div className="bottom-note">
-            <ShieldCheck size={17} />
-            <span>Your pace. Your path. Every small step counts.</span>
-          </div>
         </div>
         <aside className="right-rail">
           <section className="progress-card">
@@ -227,7 +224,7 @@ export function Dashboard({
               <br />
               {completed === 8
                 ? "Your next move starts here."
-                : "Your future business is rooting for you."}
+                : ""}
             </p>
             <div className="mini-progress">
               {titles.map((t, i) => (

@@ -3,6 +3,7 @@ import { lockPageScroll } from "./scrollLock";
 import { Children, isValidElement, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
+import beePortrait from "./assets/mascot/bee.png";
 import mascotAsset from "./assets/mascot/mascot.png";
 import wordmarkAsset from "./assets/brand/logo.png";
 import logomarkAsset from "./assets/brand/logomark.png";
@@ -140,8 +141,10 @@ export function PageHeading({
 
 export function LoadingScreen({
   label = "Working on your request…",
+  branded = false,
 }: {
   label?: string;
+  branded?: boolean;
 }) {
   useEffect(() => {
     const unlockScroll = lockPageScroll();
@@ -163,9 +166,9 @@ export function LoadingScreen({
       aria-label="Please wait"
     >
       <div className="loading-card" role="status" aria-live="polite">
-        <span className="loading-spinner" aria-hidden="true" />
+        {branded ? <div className="signin-flight" aria-hidden="true"><img src={beePortrait} alt="" /><div className="signin-progress"><span /></div></div> : <span className="loading-spinner" aria-hidden="true" />}
         <h2>{label}</h2>
-        <p>Your work is safe.</p>
+
       </div>
     </div>,
     document.body,

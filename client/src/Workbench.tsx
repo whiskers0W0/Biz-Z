@@ -62,6 +62,13 @@ export function Workbench({
   mode: "money" | "launch";
   isDemo: boolean;
 }) {
+  const [suggestions, setSuggestions] = useState<{tasks?:{title:string;reason:string}[];values?:{field:"capital"|"price"|"variable"|"units";value:number;source:string}[]} | null>(null);
+  const [suggesting,setSuggesting] = useState(false);
+  async function suggest(choice: "money"|"launch"|"template") {
+    setSuggesting(true);setError("");
+    try {setSuggestions(await api(base+"/tool-suggestions","POST",{mode:choice}));}
+    catch(e){setError((e as Error).message);}finally{setSuggesting(false);}
+  }
   const base = "/plans/" + planId;
   const [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
@@ -209,6 +216,15 @@ export function Workbench({
           <Button onClick={() => setNotice("")}>Continue</Button>
         </Modal>
       )}
+      <div className="tool-suggestions"><Button variant="secondary" disabled={suggesting || loading} onClick={()=>void suggest(mode)}>{suggesting ? "Preparing suggestions…" : mode === "money" ? "Use values from my plan" : "Generate from my plan"}</Button>{mode === "launch" && <Button variant="secondary" disabled={suggesting || loading} onClick={()=>void suggest("template")}>Use a checklist template</Button>}<p>{mode === "money" ? "Review extracted values before saving. Missing numbers stay unchanged." : "Generate tailored tasks, use section templates, or add your own."}</p></div>
+      {suggestions && <Modal title={mode === "money" ? "Values from your plan" : "Suggested launch steps"} onClose={()=>setSuggestions(null)}>
+        {suggestions.values?.map(v=><div className="suggestion-item" key={v.field}><strong>{v.field}: {v.value}</strong><p>{v.source}</p></div>)}
+        {suggestions.values?.length===0 && <p>No clear values found. Enter your assumptions manually.</p>}
+        {suggestions.tasks?.filter(t=>!tasks.some(saved=>saved.title===t.title)).map(t=><div className="suggestion-item" key={t.title}><strong>{t.title}</strong><p>{t.reason}</p><Button variant="secondary" onClick={()=>{task.reset({title:t.title,dueDate:today(),done:false});setSuggestions(null);setEditing({kind:"task"});}}>Choose and set date</Button></div>)}
+        {suggestions.tasks?.length===0 && <p>Draft your plan sections to create relevant tasks.</p>}
+        <Button variant="secondary" onClick={()=>setSuggestions(null)}>Close</Button>
+        {!!suggestions.values?.length && <Button onClick={()=>{suggestions.values?.forEach(v=>form.setValue(v.field,v.value,{shouldDirty:true,shouldValidate:true}));setSuggestions(null);setNotice("Values filled in. Review and save your assumptions.");}}>Fill in these values</Button>}
+      </Modal>}
       {mode === "money" ? (
         <>
           <section className="tool-card">
@@ -454,8 +470,8 @@ export function Workbench({
             <p>Your checklist is empty. Add your first launch step.</p>
           ) : (
             tasks.map((t) => (
-              <div className="resource-row" key={t._id}>
-                <div>
+              <div className="resource-row launch-task" key={t._id}>
+                <div className="task-copy">
                   <strong>
                     {t.done ? "✓ " : ""}
                     {t.title}
@@ -469,7 +485,8 @@ export function Workbench({
                         : "To do"}
                   </p>
                 </div>
-                <div>
+                <div className="task-actions">
+                  <Button disabled={loading} variant="secondary" onClick={()=>void mutate(base+"/tasks/"+t._id,"PUT",{title:t.title,dueDate:t.dueDate,done:!t.done})}>{t.done ? "Reopen" : "Mark done"}</Button>
                   <Button
                     variant="secondary"
                     onClick={() => {

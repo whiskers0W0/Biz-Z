@@ -1,4 +1,6 @@
 import beePortrait from "./assets/mascot/bee.png";
+import { NextSteps } from "./NextSteps";
+import { DraftChanges } from "./DraftChanges";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { accountSchema, messageSchema } from "./schemas/forms";
@@ -17,7 +19,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { LoadingScreen, Bee, Button, Modal, PageHeading } from "./components";
-import { api, subtitles } from "./data";
+import { api } from "./data";
 import type { Plan, Profile, Section } from "./data";
 
 export function Editor({
@@ -54,6 +56,7 @@ export function Editor({
     reset: resetMessage,
     formState: { errors: messageErrors },
   } = useForm<MessageValues>({ resolver: zodResolver(messageSchema) });
+  const [chatOpen, setChatOpen] = useState(true);
   const [thinking, setThinking] = useState(false);
   const [options, setOptions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -95,7 +98,7 @@ export function Editor({
     try {
       const next: Section = {
         ...section,
-        status: reviewed ? "reviewed" : section.status,
+        status: reviewed ? "reviewed" : dirty ? (section.draft.trim() ? "draft" : "not-started") : section.status,
       };
       const updated = await onSave(next);
       setSection(updated?.sections[index] || next);
@@ -147,8 +150,9 @@ export function Editor({
       setThinking(false);
     }
   }
-  async function leave(action: () => void) {
+  async function leave(action: () => void, back = false) {
     if (busy) return;
+    if (back && section.status === "reviewed" && !dirty) { action(); return; }
     setPendingNavigation(() => action);
   }
   const typing = (
@@ -158,17 +162,22 @@ export function Editor({
       <span className="sr-only">is thinking</span>
     </div>
   );
+  const sectionSuggestions = [
+    ["Clarify our mission", "Make our goals measurable", "Explain what makes us different"],
+    ["Narrow our target customers", "Strengthen the competitor comparison", "Review our SWOT"],
+    ["Clarify customer benefits", "Explain how the service works", "Compare our product options"],
+    ["Refine our promotion channels", "Improve our pricing approach", "Add ways to retain customers"],
+    ["Clarify daily operations", "Define team responsibilities", "Identify supplier needs"],
+    ["Break down startup costs", "Check sales assumptions", "Explain the funding gap"],
+    ["Highlight the market opportunity", "Summarize financial assumptions", "Sharpen our value proposition"],
+    ["List requirements to verify", "Clarify registration steps", "Identify compliance risks"],
+  ][index];
+  const usedSuggestions = new Set(chat.filter(m=>m.role==="user").map(m=>m.text.trim().toLowerCase()));
   const composer = (revision: boolean) => (
     <div className="zee-composer">
       <div className="prompt-chips">
-        {(revision
-          ? [
-              "Make it more concise",
-              "Use simpler language",
-              "Make it more specific to my business",
-            ]
-          : options
-        ).map((option) => (
+        {(revision ? (options.length ? options : sectionSuggestions) : options
+        ).filter(option=>!usedSuggestions.has(option.trim().toLowerCase())).map((option) => (
           <button
             key={option}
             disabled={busy || !available}
@@ -190,10 +199,10 @@ export function Editor({
           </button>
         )}
       </div>
-      {thinking && revision && typing}
+
       <form onSubmit={submitMessage(({ message }) => ask(message))}>
         <label htmlFor="zee-answer">
-          {revision ? "What would you like Zee to change?" : "Your answer"}
+          {revision ? "What should change?" : "Your answer"}
         </label>
         <textarea
           id="zee-answer"
@@ -202,8 +211,8 @@ export function Editor({
           disabled={busy || !available}
           placeholder={
             revision
-              ? "For example: focus on affordable care for first-time pet owners…"
-              : "A few words are enough. You can also say you’re not sure."
+              ? "Describe your changes…"
+              : "Type your answer…"
           }
         />
         {messageErrors.message && (
@@ -226,15 +235,15 @@ export function Editor({
       <button
         className="text-button mb-5"
         disabled={busy}
-        onClick={() => leave(onBack)}
+        onClick={() => leave(onBack, true)}
       >
         <ArrowLeft size={16} />
-        Back to my journey
+        Back to plan
       </button>
       <PageHeading
         eyebrow={"PART " + (index + 1) + " OF 8 · " + plan.name}
         title={section.title}
-        text={subtitles[index]}
+        text={["Your offer, customers, and goals.","Your customers, competitors, and advantage.","What you sell, its benefits, and pricing.","How you’ll reach and retain customers.","Your workflow, people, and suppliers.","Your costs, sales estimates, and funding.","The key points from your reviewed plan.","Permits and requirements to verify."][index]}
       />
       {pendingNavigation && (
         <Modal
@@ -346,16 +355,9 @@ export function Editor({
       )}
       <div className="zee-workspace" aria-busy={busy}>
         <section className="zee-interview">
-          <div className="zee-host">
-            <img src={beePortrait} alt="Zee" width={96} height={96} style={{ objectFit: "contain", flexShrink: 0 }} />
-            <div>
-              <span className="eyebrow">LET’S BUILD THIS TOGETHER</span>
-              <h2>Let’s build this section.</h2>
-              <p>
-                Answer a few questions. I’ll draft your {section.title.toLowerCase()}.
-              </p>
-            </div>
-          </div>
+          <div className="zee-conversation-header"><img src={beePortrait} alt="Zee" width={56} height={56} /><div><h2>Zee</h2><p>{section.draft ? "Your draft is ready. What would you like to change?" : "Let’s build your draft together."}</p></div></div>
+          <button type="button" className="chat-collapse" aria-expanded={chatOpen} aria-controls="section-chat" onClick={()=>setChatOpen(v=>!v)}>{chatOpen ? "Hide conversation" : "Chat with Zee"}{thinking ? " · Thinking…" : ""}</button>
+          <div id="section-chat" hidden={!chatOpen}>
           {!available && (
             <p className="soft-note">
               {isDemo
@@ -373,7 +375,7 @@ export function Editor({
               }
             >
               <Sparkles size={17} />
-              Retry Zee’s introduction
+              Try Zee again
             </Button>
           )}
           <div className="zee-transcript" aria-live="polite">
@@ -388,41 +390,40 @@ export function Editor({
                 <p>{m.text}</p>
               </div>
             ))}
-            {thinking && !section.draft && typing}
+            {thinking && typing}
           </div>
-          {!section.draft && chat.length > 0 && composer(false)}
+          {available && composer(!!section.draft)}
+          </div>
         </section>
         <section className="zee-draft">
-          <span className="eyebrow">YOUR IDEAS, PUT INTO WORDS</span>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h2>Your {section.title.toLowerCase()} draft</h2>
+            <h2>Your draft</h2>
             <Button
               variant="secondary"
               disabled={busy || !revisions.length}
               onClick={() => setHistoryIndex(revisions.length - 1)}
             >
-              Version history ({revisions.length})
+              History ({revisions.length})
             </Button>
           </div>
           {section.draft ? (
             <>
               <div className="zee-essay" style={{ whiteSpace: 'pre-wrap' }}>
-                {section.draft}
+                <DraftChanges before={[...revisions].reverse().find(r => r.draft !== section.draft)?.draft || ""} after={section.draft} />
               </div>
               <p className="zee-save-note">
-                {dirty ? "You have unsaved edits." : "Saved to this section."}{" "}
-                Check details before marking reviewed.
+                {dirty ? "Unsaved changes" : "Saved"}
               </p>
             </>
           ) : (
             <div className="zee-draft-empty">
               <Sparkles size={26} />
               <p>
-                Your draft will appear here after the chat.
+                Answer Zee to create your draft.
               </p>
             </div>
           )}
-          {section.draft && available && composer(true)}
+          {section.draft && available && <Button variant="secondary" onClick={()=>{setChatOpen(true);requestAnimationFrame(()=>document.getElementById("zee-answer")?.focus());}}>Ask Zee to revise</Button>}
           <details className="zee-manual">
             <summary>Edit manually</summary>
             <textarea
@@ -454,7 +455,7 @@ export function Editor({
             <span>
               {section.status === "reviewed"
                 ? "✓ Reviewed"
-                : "Ready to review?"}
+                : "Not reviewed"}
             </span>
             <Button
               variant="secondary"
@@ -465,7 +466,7 @@ export function Editor({
             </Button>
             <Button
               disabled={busy || !section.draft.trim()}
-              onClick={() => setDecision({ title: "Mark as reviewed?", text: "Confirm that you checked the draft and its assumptions.", action: () => save(true) })}
+              onClick={() => setDecision({ title: "Mark as reviewed?", text: "Have you checked the details and assumptions?", action: () => save(true) })}
             >
               Mark reviewed
               <Check size={16} />
@@ -474,13 +475,13 @@ export function Editor({
           <div className="section-pagination">
             <button
               disabled={busy || index === 0}
-              onClick={() => leave(() => onSection(index - 1))}
+              onClick={() => leave(() => onSection(index - 1), true)}
             >
               <ArrowLeft size={16} />
               Previous
             </button>
             <button
-              disabled={busy || index === 7}
+              disabled={busy || index === 7 || dirty || section.status !== "reviewed"}
               onClick={() => leave(() => onSection(index + 1))}
             >
               Next section
@@ -493,20 +494,25 @@ export function Editor({
   );
 }
 export function Review({
+  isDemo,
   plan,
   onBack,
   onEdit,
 }: {
   plan: Plan;
+  isDemo: boolean;
   onBack: () => void;
   onEdit: (i: number) => void;
 }) {
   const [exporting,setExporting]=useState(false);
   const [exportError,setExportError]=useState("");
   const reviewed = plan.sections.filter((s) => s.status === "reviewed").length;
+  const canExport = plan.sections.length === 8 && plan.sections.every(s => s.status === "reviewed" && s.draft.trim());
   async function download() {
+    if (!canExport) { setExportError("Review all sections before exporting."); return; }
     setExporting(true);
     try {
+    const exportPlan = isDemo ? plan : await api<Plan>(`/plans/${plan._id}/export`);
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     let y = 25;
@@ -523,17 +529,32 @@ export function Review({
       }
       y += 5;
     }
-    write("Biz-Z | Business plan", 12);
-    write(plan.name, 24);
-    write(
-      `${reviewed}/8 sections reviewed | ${new Date().toLocaleDateString()}`,
-      10,
-    );
-    write(plan.description, 11);
-    plan.sections.forEach((s, i) => {
-      write(`${i + 1}. ${s.title} [${s.status}]`, 16);
-      write(s.draft || "Not drafted yet.", 11);
+    doc.setFont("helvetica", "normal");
+    write("BUSINESS PLAN", 12);
+    write(exportPlan.name, 24);
+    write(exportPlan.description, 11);
+    write("Prepared with Biz-Z", 10);
+    write(new Date().toLocaleDateString(), 10);
+    doc.addPage();
+    const contentsPage = doc.getNumberOfPages();
+    const contents: {title:string;page:number}[] = [];
+    const order = [6,0,2,1,3,4,5,7];
+    order.forEach((index) => {
+      const section=exportPlan.sections[index];
+      doc.addPage(); y=25;
+      contents.push({title:section.title,page:doc.getNumberOfPages()});
+      doc.setFont("helvetica","bold"); write(section.title,16);
+      doc.setFont("helvetica","normal"); write(section.draft,11);
     });
+    doc.setPage(contentsPage); y=25;
+    doc.setFont("helvetica","bold");write("Contents",18);
+    doc.setFont("helvetica","normal");
+    contents.forEach(item=>{doc.setFontSize(11);doc.text(item.title,20,y);doc.text(String(item.page),190,y,{align:"right"});y+=12;});
+    const pages=doc.getNumberOfPages();
+    for(let page=2;page<=pages;page++) {
+      doc.setPage(page);doc.setFontSize(9);doc.setTextColor(100);
+      doc.text("Biz-Z | Business plan",20,287);doc.text(String(page),190,287,{align:"right"});
+    }
     doc.save(`${plan.name.replace(/[^a-z0-9]/gi, "-")}-business-plan.pdf`);
     } catch {setExportError("The PDF could not be created. Your saved plan is safe. Please try again.");} finally {setExporting(false);}
   }
@@ -555,13 +576,14 @@ export function Review({
           <BookOpen size={18} />
           {reviewed === 8
             ? "Ready for your next move"
-            : "Work in progress · export available anytime"}
+            : "Review all 8 sections to unlock export"}
         </span>
-        <Button onClick={download}>
+        <Button onClick={download} disabled={!canExport || exporting}>
           <Download size={17} />
           Download PDF
         </Button>
       </div>
+      {canExport && <NextSteps plan={plan} />}
       <div className="review-document">
         <div className="document-cover">
           <span className="eyebrow">A BUSINESS PLAN BY YOU</span>
@@ -575,7 +597,7 @@ export function Review({
               <h2>
                 <span className="yellow-text">0{i + 1}.</span> {s.title}
               </h2>
-              <button className="text-button" onClick={() => onEdit(i)}>
+              <button className="text-button" disabled={!plan.sections.slice(0, i).every(s => s.status === "reviewed")} onClick={() => onEdit(i)}>
                 Edit <ChevronRight size={15} />
               </button>
             </div>
@@ -635,7 +657,7 @@ export function AuthModal({
           ? "Create an account to save your plans."
           : "Sign in to continue."}
       </p>
-      {busy && <LoadingScreen label="Opening your workspace…" />}
+      {busy && <LoadingScreen label="Getting ready…" branded />}
       <form
         noValidate
         onSubmit={handleSubmit(async ({ name, email, password }) => {
@@ -682,6 +704,7 @@ export function AuthModal({
         </label>
         <label>
           Password
+          <span className="password-field">
           <input
             required
             type={showPassword ? "text" : "password"}
@@ -696,7 +719,8 @@ export function AuthModal({
               mode === "register" ? "new-password" : "current-password"
             }
           />
-          <button type="button" className="password-toggle" aria-pressed={showPassword} onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>} {showPassword ? "Hide password" : "Show password"}</button>
+          <button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>} </button>
+          </span>
           {mode === "register" && <small>At least 8 characters</small>}
         </label>
         {Object.entries(errors).map(([key, e]) => (

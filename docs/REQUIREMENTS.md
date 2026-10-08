@@ -117,3 +117,77 @@ Adjusted PNG mascot framing to compensate for transparent margins; reduced logom
 Implemented `/adviser` as a separate saved-chat page with search, rename, delete confirmation, optional owned-plan context and inline typing feedback. The dashboard card and sidebar open this page. Advising never mutates plan drafts. Signed-in users have a sixth MongoDB collection, Conversation, with owner checks on every operation.
 
 Verified: production build, ESLint and all four automated test groups pass. Adviser integration tests cover save/reopen, rename/delete, cross-account denial, unavailable AI preserving history and unchanged plan contents. Gemini replies in these tests are mocked. Current live Atlas/Gemini adviser use is not yet verified; earlier connectivity and submission blockers still apply.
+
+## Sequential review and export gates (4 October 2026)
+
+Each section now requires all earlier sections to be reviewed. Dashboard cards, direct editor routes, section navigation and review-page edit links follow this rule. Both manual section saves and plan-related Zee endpoints enforce it on the server. PDF export requires eight reviewed, nonempty drafts; signed-in export fetches a freshly validated plan through GET /api/plans/:id/export. Saving manual draft edits removes that section's reviewed status. Existing later drafts are retained while locked.
+
+Validation: regression tests exercise all seven locked sections, sequential unlocking, export before and after all eight reviews, owner isolation and relocking after an earlier edit. Live Atlas/Gemini verification remains separate.
+
+## Preset profile choices (4 October 2026)
+
+Removed custom-entry controls from interests, personality and work preferences. Each group has 24 preset tiles with shared dimensions and responsive columns. Skills input is replaced by “How do you like to work?” with up to five preferences saved in a separate workStyles field; earlier skills and custom selections are preserved rather than reinterpreted. AI suggestions receive work preferences, and matching uses them when present, with legacy skills retained for older profiles. Build and lint pass. Integration coverage checks preference persistence, legacy skill preservation and the five-choice limit. Live AI output is not newly verified.
+
+## Visible revisions and business context updates (4 October 2026)
+
+Draft previews now compare against the latest different saved version, highlight the changed passage and strike through replaced text, with a hide/show toggle. Reviewed sections with no unsaved changes allow Back/Previous without confirmation; forward navigation retains confirmation.
+
+Business name edits replace the old name in existing drafts and retain revisions. Description changes regenerate all existing drafts together through Gemini before saving the details; malformed/incomplete AI responses leave the existing plan unchanged. Affected sections require review again and export remains gated. Local demo supports name changes; rewriting existing drafts after a description change requires sign-in. Automated tests use mocked Gemini; live generation remains unverified.
+
+## Concise captions and sign-in splash (4 October 2026)
+
+Removed decorative workspace footer text, dashboard bottom motto and repeated loader reassurance. Demo status now uses a shorter notice with a readable 14px size. Sign-in uses the supplied bee portrait and animated progress bar, with a brief 900ms minimum after successful authentication while plans load. Reduced-motion users receive a static indicator without the artificial delay. Build and lint pass; live sign-in was not reverified for this cosmetic update.
+
+## Compact shared dialogs (4 October 2026)
+
+Replaced accumulating label margins inside modal flex forms with a consistent 16px form gap. Standardized dialog padding, field heights, readable text and action spacing. Password visibility is now an accessible icon inside the field. Dialogs retain scrolling on short viewports, with smaller mobile padding. Build and lint pass; exact browser zoom/device appearance is not yet visually reverified.
+
+## Connected planning tools (4 October 2026)
+
+Plan navigation now follows Overview, Build plan, Review & export, Money lab, Launch checklist. Each section includes purpose/output guidance, and the Zee prompt requests business-specific questions that reuse known facts. Existing-draft chat starts collapsed and can be expanded without losing conversation state.
+
+Money lab can extract explicit values from owned draft content, show source quotes and fill the form for review before saving. It does not invent missing values or automatically overwrite saved assumptions. Launch supports AI task suggestions, deterministic templates from drafted sections, and manual tasks, with date selection before saving. Checklist action rows wrap responsively, checkboxes retain appropriate dimensions, and tasks offer Mark done/Reopen. POST /api/plans/:planId/tool-suggestions is owner-scoped and makes no plan/task mutations. Automated checks use mocked Gemini; live extraction accuracy and full visual/device verification remain outstanding.
+
+## Locked post-plan pages (4 October 2026)
+
+Review & export, Money lab and Launch checklist now remain disabled in navigation until all eight sections have nonempty reviewed drafts. Lock icons and a reviewed-count explanation identify unavailable tools. Direct page URLs render a locked screen with Continue my plan rather than mounting the tool. Dashboard and planning-stage review controls use the same completion rule. Editing that removes reviewed status relocks these pages while retaining saved tool data. This is a page-access rule; existing authenticated money/task API endpoints remain available, while export already has server validation. Build and lint pass.
+
+## Build-plan copy reduction (4 October 2026)
+
+Consolidated repeated section guidance into one short subtitle. Removed repeated chat introductions and decorative draft captions; shortened action labels, placeholders, save status and lock guidance. Revision controls are tucked under Revise with Zee. Dashboard copy is more direct. Full business drafts, conversation history, validation and essential review confirmations are preserved. Build and lint pass.
+
+## Business-plan reference adaptation (5 October 2026)
+
+Read the supplied DOCX and mapped its useful business headings into Zee's eight-section drafting guidance. University/course/instructor/student details, academic cover wording and sample figures are excluded. Export adds a business cover, contents, executive-summary-first reading order, section page breaks and page numbers while retaining the existing build sequence. See PLAN_REFERENCE.md for adopted coverage and excluded optional features. Existing drafts are preserved. Next steps adds four topic-based search links after full review; these are not verified resource recommendations. PDF layout and live AI coverage still require visual/live verification.
+
+## Continuous Zee revision experience (5 October 2026)
+
+Idea cards align to the top rather than stretching to the expanded neighbor's height. The section chat now has a Zee portrait, stays open by default, and retains one composer for both initial answers and revisions. A visible Ask Zee to revise action focuses that composer from the draft. Conversation height is bounded and remains collapsible. Business-name replacement covers case and whitespace variations and literal special characters in all current drafts, including AI-regenerated content; historical revisions remain unchanged. Build and lint pass; automated rename regression added. Full visual browser verification remains outstanding.
+
+## Section-specific choice buttons (5 October 2026)
+
+Zee choices use 16px text and at least 52px touch targets. Revision shortcuts now vary by section purpose; generated choices request the latest question/draft and business context. Previously selected choices and duplicate generated labels are filtered. Build/lint and regression checks cover code validity; live AI relevance remains unverified.
+
+## Name-first setup and progress-preserving rename (5 October 2026)
+
+Name-only edits now retain section review statuses in account and demo plans while updating name mentions and recording revision history. Description changes still require review. Generated ideas use descriptive business concepts, and choosing one creates Untitled business instead of assigning an AI brand. The initial company chat asks for a name or confirmation of an existing name. Subsequent guidance asks owner count and setup one at a time, permits requested name suggestions and carries a confirmed name into plan metadata/current drafts. These follow-up choices depend on Gemini; live conversational verification remains pending. Rename regression now expects preserved review progress.
+
+## Adaptive section interviews (5 October 2026)
+
+Removed the two-question drafting limit. Zee now prioritizes missing business-specific facts and contradictions, uses each section's coverage as a non-exhaustive guide, and skips irrelevant or already answered questions. Uncertainty can lead to helpful choices instead of prematurely ending the conversation. Explicit draft-now requests still work with labeled assumptions. Revision requests can ask a clarifying question without replacing the existing draft. Recent section context increased to 40 messages. Live conversational quality remains unverified; automated checks validate route behavior using mocked output.
+
+## Direct discovery flow (5 October 2026)
+
+Discover ideas routes incomplete profiles to inputs; completed profiles automatically generate suggestions on entering the ideas page, eliminating the extra Find ideas click. The yellow mascot banner stays as the results header and inline generation state. Retry and Show more remain available. Build and lint pass; live generation was not rechecked.
+
+## Business location before discovery (5 October 2026)
+
+The banner now lists all five selected interests. Discovery waits for users to choose their profile location or enter another city/country. The request passes that location as generation context without changing the profile, and the chosen idea carries its location into the new plan description. Location assumptions must be labeled; there is no Maps lookup or verified local market research. Demo ideas remain illustrative. Build/lint pass; live recommendation quality is unverified.
+
+## Location prompt reverted (5 October 2026)
+
+Removed the optional business-location selection from discovery at the user's request. Automatic generation is restored; new plans no longer append the selected location. The existing profile location field and display of all five interests are retained. Existing saved plans are not modified.
+
+## Commit verification (8 October 2026)
+
+At the user's request, pending work is grouped into database/backend and connected frontend/documentation commits using the configured Adraneda identity. This grouping records the actual changed areas, not proof of exclusive authorship or completion of other members' assignments. Production build, ESLint, all nine automated tests and git diff --check passed. The existing bundle-size warning remains. Live Atlas/Gemini and full visual/PDF verification remain outstanding.

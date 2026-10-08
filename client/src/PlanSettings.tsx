@@ -1,3 +1,4 @@
+import { replaceBusinessName } from "./businessName";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,14 +40,23 @@ export function PlanSettings({
       </Button>
       {open && (
         <Modal title="Your business details" onClose={() => setOpen(false)}>
-          {isSubmitting && <LoadingScreen label="Saving business details…" />}
+          {isSubmitting && <LoadingScreen label="Updating business details and drafts…" />}
+          <p>Name changes keep your progress. Description changes need another review.</p>
           <form
             noValidate
             onSubmit={handleSubmit(async (v) => {
               try {
+                if (isDemo && v.description !== plan.description && plan.sections.some(s=>s.draft.trim())) throw new Error("Sign in to update existing drafts with Zee. Your details have not changed.");
                 onUpdate(
                   isDemo
-                    ? { ...plan, ...v }
+                    ? { ...plan, ...v, sections: plan.sections.map(s => {
+                      if (v.name === plan.name || !s.draft) return s;
+                      const draft=replaceBusinessName(s.draft,plan.name,v.name);
+                      const revisions=[...(s.revisions || [])];
+                      if (!revisions.length) revisions.push({_id:crypto.randomUUID(),draft:s.draft,source:"Previous draft",createdAt:new Date().toISOString()});
+                      if(draft!==s.draft) revisions.push({_id:crypto.randomUUID(),draft,source:"Business details updated",createdAt:new Date().toISOString()});
+                      return {...s,draft,revisions,status:s.status};
+                    }) }
                     : await api<Plan>("/plans/" + plan._id, "PUT", v),
                 );
                 setOpen(false);

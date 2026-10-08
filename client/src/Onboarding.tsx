@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { profileFormSchema } from "./schemas/forms";
 import type { ProfileValues } from "./schemas/forms";
 
-import { useState } from "react";
+import { useState, useEffect, useEffectEvent, useRef } from "react";
 import {
   ArrowRight,
   ArrowLeft,
@@ -49,14 +49,14 @@ export function Onboarding({
   const headings = [
     "What sparks your interest?",
     "What makes you, you?",
-    "You bring more than you think.",
+    "How do you like to work?",
     "Let’s find your starting point.",
     "Yep, this looks like you.",
   ];
   const subheads = [
     "Choose 5 interests.",
-    "Choose 5 work traits.",
-    "Add your skills and available time.",
+    "Choose 5 personality traits.",
+    "Choose up to 5 work preferences and set your time.",
     "Set your location and budget.",
     "Check your profile.",
   ];
@@ -106,13 +106,13 @@ export function Onboarding({
             </span>
             <small>You can change these later</small>
           </div>
-          <TopicPicker key={key} label={step === 0 ? "interest" : "work trait"} options={step === 0 ? interests : traits} selected={selected} limit={5} onChange={values => setData({...data, [key]: values})} />
+          <TopicPicker key={key} label={step === 0 ? "interests" : "personality traits"} options={step === 0 ? interests : traits} selected={selected} limit={5} onChange={values => setData({...data, [key]: values})} />
         </>
       )}
       {step === 2 && (
-        <div className="onboard-form">
-          <p>Choose skills you already have. You can skip this.</p>
-          <TopicPicker label="skill" options={skillOptions} selected={data.skills ? data.skills.split(", ") : []} limit={10} onChange={values => setData({...data, skills: values.join(", ")})} />
+        <div className="onboard-form work-preferences">
+          <p>Pick the ways of working that suit you.</p>
+          <TopicPicker label="work preferences" options={workOptions} selected={data.workStyles || []} limit={5} onChange={values => setData({...data, workStyles: values})} />
           <label>
             Hours you can give your business each week
             <input
@@ -193,7 +193,7 @@ export function Onboarding({
               </span>
             ))}
           </div>
-          <h3>Your strengths</h3>
+          <h3>Your personality</h3>
           <div className="chips">
             {data.traits.map((t) => (
               <span className="pill lavender" key={t}>
@@ -209,7 +209,7 @@ export function Onboarding({
             {data.currency} {data.monthly.toLocaleString()}/month budget
           </p>
           <p>
-            {data.skills || "A fresh perspective and a willingness to start."}
+            {data.workStyles?.join(", ") || "No work preferences selected."}
           </p>
         </div>
       )}
@@ -293,26 +293,33 @@ export function Ideas({
       setLoading(false);
     }
   }
+  const started = useRef(false);
+  const startGeneration = useEffectEvent(() => { void generate(); });
+  useEffect(() => {
+    if (profile.interests.length !== 5 || started.current) return;
+    const timer = setTimeout(() => { started.current = true; startGeneration(); }, 0);
+    return () => clearTimeout(timer);
+  }, [profile.interests.length]);
   return (
     <>
-      {loading && <LoadingScreen label="Zee is exploring ideas for you…" />}
       <PageHeading
         eyebrow="A WORLD OF WHAT-IFS"
         title="Find your kind of business"
-        text="AI ideas, ranked for your interests, skills, budget and time."
+        text="AI ideas, ranked for your interests, work preferences, budget and time."
       />
       <div className="ideas-banner">
         <Bee size={84} />
         <div>
-          <h3>Find your best fit.</h3>
+          <h3>{loading ? "Zee is finding your matches…" : ideas.length ? "Ideas for you" : "Find your best fit"}</h3>
           <p>
             {profile.interests.length === 5
-              ? `Let’s explore possibilities around ${profile.interests.slice(0, 3).join(", ")}.`
+              ? `Based on ${profile.interests.join(", ")}.`
               : "Tell us what you love so we can find a starting point that fits."}
           </p>
+          {loading && <div className="idea-loading-track" role="progressbar" aria-label="Finding business ideas"><span /></div>}
         </div>
-        <Button
-          disabled={loading || busy || ideas.length >= 60 || (isDemo && ideas.length > 0)}
+        {!loading && <Button
+          disabled={busy || ideas.length >= 60 || (isDemo && ideas.length > 0)}
           onClick={profile.interests.length === 5 ? generate : onProfile}
         >
           {loading
@@ -320,16 +327,14 @@ export function Ideas({
             : profile.interests.length === 5
               ? ideas.length
                 ? "Show more ideas"
-                : "Find ideas"
+                : "Try again"
               : "Build my profile"}
           <Sparkles size={17} />
-        </Button>
+        </Button>}
       </div>
       {isDemo && (
         <p className="helper-text">
-          Demo ideas are illustrative templates based on your interests. Sign in
-          with a configured Gemini connection for personalized AI
-          recommendations.
+          Sample ideas. Sign in for personalized suggestions.
         </p>
       )}
       {error && (
@@ -366,7 +371,7 @@ export function Ideas({
               {idea.reasons && <details className="idea-score-details"><summary>Score details</summary><ul>{idea.reasons.map(r => <li key={r}>{r}</li>)}</ul></details>}
               <Button
                 disabled={busy}
-                onClick={() => createPlan(idea.name, idea.description)}
+                onClick={() => createPlan("Untitled business", idea.description)}
               >
                 Choose this idea <ArrowRight size={16} />
               </Button>
@@ -388,42 +393,23 @@ export function Ideas({
   );
 }
 
-const skillOptions = [
-  ["🍞", "Baking"], ["🍳", "Cooking"], ["🎨", "Graphic design"], ["🎬", "Video editing"],
-  ["📷", "Photography"], ["✍️", "Writing"], ["📱", "Social media"], ["💬", "Customer service"],
-  ["🛍️", "Selling"], ["🧮", "Bookkeeping"], ["💻", "Coding"], ["🧑‍🏫", "Teaching"],
-  ["🧵", "Sewing"], ["🛠️", "Repairs"], ["📅", "Event planning"], ["🌱", "Gardening"],
-  ["🐾", "Pet care"], ["📦", "Organizing"],
+const workOptions = [
+ ["🚩", "Enjoy leading"], ["💜", "Enjoy supporting"], ["🤝", "Face-to-face work"], ["⏱️", "Fixed schedule"],
+ ["🏠", "From home"], ["🏢", "At a workplace"], ["🌳", "Outdoors"], ["🚶", "On the move"],
+ ["👤", "Working solo"], ["🤝", "With a small team"], ["👥", "With customers"], ["💻", "Online"],
+ ["🛠️", "Hands-on tasks"], ["🎨", "Creative projects"], ["🔍", "Research & analysis"], ["📋", "Planning & organizing"],
+ ["🕘", "A steady routine"], ["⏰", "Flexible hours"], ["⚡", "A fast pace"], ["🌿", "A calm pace"],
+ ["📦", "Making products"], ["💬", "Offering services"], ["🎓", "Teaching others"], ["🧩", "Solving problems"],
+ ["📅", "Project-based work"], ["🔄", "Varied daily tasks"], ["📝", "Clear instructions"], ["🧭", "Setting my own direction"],
 ];
 function TopicPicker({label, options, selected, limit, onChange}: {
-  label: string; options: string[][]; selected: string[]; limit: number; onChange: (values: string[]) => void;
+ label: string; options: string[][]; selected: string[]; limit: number; onChange: (values: string[]) => void;
 }) {
-  const [custom, setCustom] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [added, setAdded] = useState<string[]>([]);
-  const standard = options.map(([,name]) => name.toLowerCase());
-  const extras = [...new Set([...added, ...selected])].filter(name => !standard.includes(name.toLowerCase()));
-  const choices = [...options, ...extras.map(name => ["✨", name])];
-  function toggle(name: string) {
-    setFeedback("");
-    onChange(selected.includes(name) ? selected.filter(s => s !== name) : selected.length < limit ? [...selected, name] : selected);
-  }
-  function add() {
-    const value = custom.trim().replace(/\s+/g, " ");
-    if (!value) { setFeedback("Enter a " + label + "."); return; }
-    if (value.includes(",")) { setFeedback("Add one item at a time, without commas."); return; }
-    const existing = choices.find(([,name]) => name.toLowerCase() === value.toLowerCase())?.[1];
-    if (existing && selected.includes(existing)) { setFeedback("Already selected."); return; }
-    if (selected.length >= limit) { setFeedback("Remove a selection before adding another."); return; }
-    const name = existing || value;
-    if (!existing) setAdded(prev => [...prev, name]);
-    onChange([...selected, name]); setCustom(""); setFeedback("");
-  }
-  return <div className="topic-picker">
-    <div className="topic-grid">{choices.map(([emoji,name],i) => <button type="button" key={name} aria-pressed={selected.includes(name)} disabled={!selected.includes(name) && selected.length >= limit} onClick={() => toggle(name)} className={`topic-card topic-color-${i % 5} ${selected.includes(name) ? "selected" : ""}`}>
-      <span className="topic-check">{selected.includes(name) && <Check size={15}/>}</span><span className="topic-emoji">{emoji}</span><strong>{name}</strong>
-    </button>)}</div>
-    <div className="custom-topic"><label>Add your own {label}<input value={custom} maxLength={60} onChange={e => setCustom(e.target.value)} onKeyDown={e => {if(e.key === "Enter") {e.preventDefault();add();}}} placeholder={"Enter a " + label} /></label><Button variant="secondary" onClick={add}>Add</Button></div>
-    <p className="helper-text" role="status">{feedback || (label === "skill" ? selected.length + " of " + limit + " selected" : "Custom choices count toward your 5 selections.")}</p>
-  </div>;
+ // Preserve earlier saved choices so users can remove or retain them.
+ const extras = selected.filter(name => !options.some(([, value]) => value === name));
+ const choices = [...options, ...extras.map(name => ["✨", name])];
+ return <div className="topic-picker" role="group" aria-label={label}>
+ <div className="topic-grid">{choices.map(([emoji,name],i) => <button type="button" key={name} aria-pressed={selected.includes(name)} disabled={!selected.includes(name) && selected.length >= limit} onClick={() => onChange(selected.includes(name) ? selected.filter(s => s !== name) : [...selected,name])} className={`topic-card topic-color-${i % 5} ${selected.includes(name) ? "selected" : ""}`}>
+ <span className="topic-check">{selected.includes(name) && <Check size={15}/>}</span><span className="topic-emoji">{emoji}</span><strong>{name}</strong>
+ </button>)}</div><p className="helper-text" role="status">{selected.length} of {limit} selected</p></div>;
 }

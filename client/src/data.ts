@@ -2,6 +2,7 @@ export type Profile = {
   interests: string[];
   traits: string[];
   skills: string;
+  workStyles?: string[];
   hours: number;
   capital: number;
   monthly: number;
@@ -100,6 +101,7 @@ export const questions = [
   ],
 ];
 export const interests = [
+  ["🎵", "Music"], ["💄", "Beauty & skincare"], ["🏋️", "Sports & fitness"], ["🌻", "Gardening"], ["📖", "Books & writing"], ["🚗", "Cars & transport"], ["🧸", "Children & family"], ["🏘️", "Community"], ["💼", "Business & finance"],
   ["🍰", "Food & baking"],
   ["🎨", "Art & design"],
   ["🌿", "Sustainability"],
@@ -117,6 +119,7 @@ export const interests = [
   ["📱", "Social media"],
 ];
 export const traits = [
+  ["🦁", "Confident"], ["🧘", "Calm"], ["🔧", "Resourceful"], ["🤲", "Supportive"], ["📖", "Reflective"], ["🌟", "Optimistic"], ["⚖️", "Decisive"], ["🛡️", "Reliable"], ["🚀", "Ambitious"],
   ["💡", "Creative"],
   ["📋", "Organized"],
   ["🔎", "Analytical"],
@@ -137,6 +140,7 @@ export const emptyProfile: Profile = {
   interests: [],
   traits: [],
   skills: "",
+  workStyles: [],
   hours: 10,
   capital: 0,
   monthly: 0,

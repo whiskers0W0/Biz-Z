@@ -55,7 +55,7 @@ export function IdeaCatalog({
     <section className="tool-card">
       <h2>Explore your matches</h2>
       <p>
-        Match scores compare interests (40 points), skills (25), budget (20),
+        Match scores compare interests (40 points), work preferences (25; saved skills for older profiles), budget (20),
         and time (15). They are planning rules, not a prediction of business
         success. Catalog costs are illustrative PHP assumptions.
       </p>

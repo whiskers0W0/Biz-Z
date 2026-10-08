@@ -15,6 +15,7 @@ export const profileFormSchema = z.object({
     .length(5, "Select exactly five traits")
     .refine((a) => new Set(a).size === 5),
   skills: z.string().max(2000),
+  workStyles: z.array(z.string().trim().min(1).max(60)).max(5).optional(),
   hours: z.number().min(1).max(168),
   capital: z.number().min(0).max(1e12),
   monthly: z.number().min(0).max(1e12),
