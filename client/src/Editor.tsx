@@ -1,3 +1,5 @@
+import { FormalDraft } from "./FormalDraft";
+import { documentBlocks } from "./documentBlocks";
 import beePortrait from "./assets/mascot/bee.png";
 import { NextSteps } from "./NextSteps";
 import { DraftChanges } from "./DraftChanges";
@@ -17,6 +19,7 @@ import {
   BookOpen,
   Send,
   Sparkles,
+  Pencil,
 } from "lucide-react";
 import { LoadingScreen, Bee, Button, Modal, PageHeading } from "./components";
 import { api } from "./data";
@@ -30,6 +33,7 @@ export function Editor({
   onSave,
   onBack,
   onSection,
+  onReview,
   notify,
   onDirty,
   onMessages,
@@ -43,6 +47,7 @@ export function Editor({
   onSave: (s: Section) => Promise<Plan | undefined>;
   onBack: () => void;
   onSection: (i: number) => void;
+  onReview: () => void;
   notify: (s: string) => void;
   onPlan: (plan: Plan) => void;
   onDirty: (dirty: boolean) => void;
@@ -56,6 +61,10 @@ export function Editor({
     reset: resetMessage,
     formState: { errors: messageErrors },
   } = useForm<MessageValues>({ resolver: zodResolver(messageSchema) });
+  const [editing, setEditing] = useState(false);
+  const editSnapshot = useRef<Section | null>(null);
+  const draftInput = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (editing) draftInput.current?.focus(); }, [editing]);
   const [chatOpen, setChatOpen] = useState(true);
   const [thinking, setThinking] = useState(false);
   const [options, setOptions] = useState<string[]>([]);
@@ -71,6 +80,10 @@ export function Editor({
   const chat = messages.filter((m) => m.section === index);
   const available = !isDemo && aiAvailable;
   const started = useRef(false);
+  const transcript = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (chatOpen && transcript.current) transcript.current.scrollTop = transcript.current.scrollHeight;
+  }, [chat.length, thinking, chatOpen]);
   const [introFailed, setIntroFailed] = useState(false);
   const startInterview = useEffectEvent(() => {
     void ask(
@@ -120,9 +133,10 @@ export function Editor({
   }
   async function ask(prompt: string) {
     setIntroFailed(false);
-    if (!prompt.trim() || busy || !available) return;
+    if (!prompt.trim() || busy || editing || !available) return;
     setBusy(true);
     setThinking(true);
+    setOptions([]);
     setError("");
     try {
       if (dirty) {
@@ -175,12 +189,12 @@ export function Editor({
   const usedSuggestions = new Set(chat.filter(m=>m.role==="user").map(m=>m.text.trim().toLowerCase()));
   const composer = (revision: boolean) => (
     <div className="zee-composer">
-      <div className="prompt-chips">
+      {!busy && <div className="zee-suggestions"><p className="suggestions-label">{options.length ? "Suggested replies" : revision ? "Refine this section" : ""}</p><div className="prompt-chips">
         {(revision ? (options.length ? options : sectionSuggestions) : options
         ).filter(option=>!usedSuggestions.has(option.trim().toLowerCase())).map((option) => (
           <button
             key={option}
-            disabled={busy || !available}
+            disabled={busy || editing || !available}
             onClick={() => ask(option)}
           >
             {option}
@@ -188,7 +202,7 @@ export function Editor({
         ))}
         {!revision && chat.length > 0 && (
           <button
-            disabled={busy || !available}
+            disabled={busy || editing || !available}
             onClick={() =>
               ask(
                 "Draft this section now using what you know. Label anything uncertain.",
@@ -198,7 +212,7 @@ export function Editor({
             Suggest a draft
           </button>
         )}
-      </div>
+      </div></div>}
 
       <form onSubmit={submitMessage(({ message }) => ask(message))}>
         <label htmlFor="zee-answer">
@@ -208,7 +222,7 @@ export function Editor({
           id="zee-answer"
           {...registerMessage("message")}
           maxLength={4000}
-          disabled={busy || !available}
+          disabled={busy || editing || !available}
           placeholder={
             revision
               ? "Describe your changes…"
@@ -218,11 +232,11 @@ export function Editor({
         {messageErrors.message && (
           <p className="error-text">{messageErrors.message.message}</p>
         )}
-        <Button type="submit" disabled={busy || !available}>
+        <Button type="submit" disabled={busy || editing || !available}>
           {busy
             ? "Zee is thinking…"
             : revision
-              ? "Update my draft"
+              ? "Send to Zee"
               : "Send to Zee"}
           <Send size={16} />
         </Button>
@@ -355,7 +369,7 @@ export function Editor({
       )}
       <div className="zee-workspace" aria-busy={busy}>
         <section className="zee-interview">
-          <div className="zee-conversation-header"><img src={beePortrait} alt="Zee" width={56} height={56} /><div><h2>Zee</h2><p>{section.draft ? "Your draft is ready. What would you like to change?" : "Let’s build your draft together."}</p></div></div>
+          <div className="zee-conversation-header"><img src={beePortrait} alt="Zee" width={56} height={56} /><div><h2>Zee <span className="zee-topic">{section.title}</span></h2><p>{section.draft ? "Keep refining together, then mark your draft reviewed." : "Let’s build your draft together."}</p></div></div>
           <button type="button" className="chat-collapse" aria-expanded={chatOpen} aria-controls="section-chat" onClick={()=>setChatOpen(v=>!v)}>{chatOpen ? "Hide conversation" : "Chat with Zee"}{thinking ? " · Thinking…" : ""}</button>
           <div id="section-chat" hidden={!chatOpen}>
           {!available && (
@@ -367,7 +381,7 @@ export function Editor({
           )}
           {chat.length === 0 && introFailed && (
             <Button
-              disabled={busy || !available}
+              disabled={busy || editing || !available}
               onClick={() =>
                 ask(
                   "Start guiding me through this section. Ask me one short question with useful answer choices.",
@@ -378,7 +392,7 @@ export function Editor({
               Try Zee again
             </Button>
           )}
-          <div className="zee-transcript" aria-live="polite">
+          <div className="zee-transcript" ref={transcript} role="log" aria-label={section.title + " conversation"} aria-live="polite">
             {chat.map((m) => (
               <div
                 key={m._id}
@@ -397,23 +411,27 @@ export function Editor({
         </section>
         <section className="zee-draft">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h2>Your draft</h2>
+            <div className="draft-title"><h2>Your draft</h2><button type="button" className="draft-edit-button" aria-label="Edit draft" title="Edit draft" disabled={busy || editing} onClick={() => { editSnapshot.current = { ...section }; setEditing(true); }}><Pencil size={19}/></button></div>
             <Button
               variant="secondary"
-              disabled={busy || !revisions.length}
+              disabled={busy || editing || !revisions.length}
               onClick={() => setHistoryIndex(revisions.length - 1)}
             >
               History ({revisions.length})
             </Button>
           </div>
-          {section.draft ? (
+          {editing ? (
+            <div className="draft-inline-editor">
+              <label className="sr-only" htmlFor="manual-draft">Edit section draft</label>
+              <textarea id="manual-draft" ref={draftInput} value={section.draft} maxLength={30000} disabled={busy} onChange={e => { setSection({ ...section, draft: e.target.value }); setDirty(true); onDirty(true); }} />
+              <div className="editor-actions"><span role="status">{dirty ? "Unsaved changes" : "Editing draft"}</span><Button variant="secondary" disabled={busy} onClick={() => { if (editSnapshot.current) setSection(editSnapshot.current); setDirty(false); onDirty(false); setEditing(false); }}>Cancel</Button><Button disabled={busy || !dirty} onClick={async () => { if (await save(false, true)) setEditing(false); }}>Save changes</Button></div>
+            </div>
+          ) : section.draft ? (
             <>
               <div className="zee-essay" style={{ whiteSpace: 'pre-wrap' }}>
                 <DraftChanges before={[...revisions].reverse().find(r => r.draft !== section.draft)?.draft || ""} after={section.draft} />
               </div>
-              <p className="zee-save-note">
-                {dirty ? "Unsaved changes" : "Saved"}
-              </p>
+
             </>
           ) : (
             <div className="zee-draft-empty">
@@ -423,25 +441,7 @@ export function Editor({
               </p>
             </div>
           )}
-          {section.draft && available && <Button variant="secondary" onClick={()=>{setChatOpen(true);requestAnimationFrame(()=>document.getElementById("zee-answer")?.focus());}}>Ask Zee to revise</Button>}
-          <details className="zee-manual">
-            <summary>Edit manually</summary>
-            <textarea
-              aria-label="Edit section draft"
-              value={section.draft}
-              maxLength={30000}
-              disabled={busy}
-              onChange={(e) => {
-                setSection({
-                  ...section,
-                  draft: e.target.value,
-                  status: "draft",
-                });
-                setDirty(true);
-                onDirty(true);
-              }}
-            />
-          </details>
+
           {error && (
             <Modal
               title="We couldn’t complete that"
@@ -451,27 +451,22 @@ export function Editor({
               <Button onClick={() => setError("")}>Back to my draft</Button>
             </Modal>
           )}
-          <div className="editor-actions">
+          {!editing && <div className="editor-actions draft-actions">
+            {section.draft && available && <Button variant="secondary" onClick={()=>{setChatOpen(true);requestAnimationFrame(()=>document.getElementById("zee-answer")?.focus());}}>Ask Zee to revise</Button>}
             <span>
               {section.status === "reviewed"
-                ? "✓ Reviewed"
-                : "Not reviewed"}
+                ? "Saved · Reviewed"
+                : "Saved · Needs review"}
             </span>
+
             <Button
-              variant="secondary"
-              disabled={busy || !dirty}
-              onClick={() => save()}
-            >
-              Save edits
-            </Button>
-            <Button
-              disabled={busy || !section.draft.trim()}
+              disabled={busy || !section.draft.trim() || section.status === "reviewed"}
               onClick={() => setDecision({ title: "Mark as reviewed?", text: "Have you checked the details and assumptions?", action: () => save(true) })}
             >
-              Mark reviewed
+              {section.status === "reviewed" ? "Reviewed" : "Mark reviewed"}
               <Check size={16} />
             </Button>
-          </div>
+          </div>}
           <div className="section-pagination">
             <button
               disabled={busy || index === 0}
@@ -481,10 +476,10 @@ export function Editor({
               Previous
             </button>
             <button
-              disabled={busy || index === 7 || dirty || section.status !== "reviewed"}
-              onClick={() => leave(() => onSection(index + 1))}
+              disabled={busy || dirty || section.status !== "reviewed" || (index === 7 && !plan.sections.every(s=>s.status === "reviewed" && s.draft.trim()))}
+              onClick={() => leave(index === 7 ? onReview : () => onSection(index + 1))}
             >
-              Next section
+              {index === 7 ? "Review & export" : "Next section"}
               <ArrowRight size={16} />
             </button>
           </div>
@@ -516,20 +511,23 @@ export function Review({
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     let y = 25;
-    function write(text: string, size: number) {
+    function write(text: string, size: number, justify = false) {
       doc.setFontSize(size);
       const lines = doc.splitTextToSize(text, 170);
-      for (const line of lines) {
+      for (const [lineIndex,line] of lines.entries()) {
         if (y > 275) {
           doc.addPage();
           y = 22;
         }
-        doc.text(line, 20, y);
+        if(justify && lineIndex < lines.length-1 && line.trim().includes(" ")) {
+          const words=line.trim().split(/\s+/); const gap=(170-words.reduce((n:number,w:string)=>n+doc.getTextWidth(w),0))/(words.length-1); let x=20;
+          words.forEach((w:string)=>{doc.text(w,x,y);x+=doc.getTextWidth(w)+gap;});
+        } else doc.text(line, 20, y);
         y += size * 0.5 + 2;
       }
       y += 5;
     }
-    doc.setFont("helvetica", "normal");
+    doc.setFont("times", "normal");
     write("BUSINESS PLAN", 12);
     write(exportPlan.name, 24);
     write(exportPlan.description, 11);
@@ -543,12 +541,12 @@ export function Review({
       const section=exportPlan.sections[index];
       doc.addPage(); y=25;
       contents.push({title:section.title,page:doc.getNumberOfPages()});
-      doc.setFont("helvetica","bold"); write(section.title,16);
-      doc.setFont("helvetica","normal"); write(section.draft,11);
+      doc.setFont("times","bold"); write(section.title,16);
+      documentBlocks(section.draft).forEach(block=>{if(block.heading && y>250){doc.addPage();y=22;}doc.setFont("times",block.heading?"bold":"normal");write(block.text,block.heading?13:11,!block.heading);});
     });
     doc.setPage(contentsPage); y=25;
-    doc.setFont("helvetica","bold");write("Contents",18);
-    doc.setFont("helvetica","normal");
+    doc.setFont("times","bold");write("Contents",18);
+    doc.setFont("times","normal");
     contents.forEach(item=>{doc.setFontSize(11);doc.text(item.title,20,y);doc.text(String(item.page),190,y,{align:"right"});y+=12;});
     const pages=doc.getNumberOfPages();
     for(let page=2;page<=pages;page++) {
@@ -591,11 +589,11 @@ export function Review({
           <p>{plan.description}</p>
           <Bee size={100} happy />
         </div>
-        {plan.sections.map((s, i) => (
+        {[6,0,2,1,3,4,5,7].map((i, position) => ({s:plan.sections[i],i,position})).map(({s,i,position}) => (
           <section key={s.title}>
             <div className="flex justify-between gap-3 items-center">
               <h2>
-                <span className="yellow-text">0{i + 1}.</span> {s.title}
+                <span className="yellow-text">0{position + 1}.</span> {s.title}
               </h2>
               <button className="text-button" disabled={!plan.sections.slice(0, i).every(s => s.status === "reviewed")} onClick={() => onEdit(i)}>
                 Edit <ChevronRight size={15} />
@@ -604,10 +602,7 @@ export function Review({
             <span className="document-status">
               {s.status.replace("-", " ")}
             </span>
-            <p className="whitespace-pre-wrap">
-              {s.draft ||
-                "Your story is still taking shape. Add a draft in this section to see it here."}
-            </p>
+            <FormalDraft text={s.draft || "No draft yet."}/>
           </section>
         ))}
       </div>

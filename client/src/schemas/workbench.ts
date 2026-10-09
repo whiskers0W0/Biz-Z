@@ -8,7 +8,7 @@ const money = z
     "Use at most two decimal places",
   );
 export const financialSchema = z.object({
-  currency: z.enum(["PHP", "USD", "EUR", "GBP", "SGD"]),
+  currency: z.enum(["PHP", "USD", "EUR", "GBP", "SGD", "AUD", "CAD", "NZD", "HKD", "CNY", "JPY", "KRW", "INR", "MYR", "THB", "IDR", "VND", "AED", "SAR", "CHF"]),
   capital: money,
   price: money,
   variable: money,
@@ -24,7 +24,9 @@ export const budgetSchema = z.object({
 export type BudgetValues = z.infer<typeof budgetSchema>;
 export const taskSchema = z.object({
   title: z.string().trim().min(1, "Enter a task").max(160),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date"),
+  dueDate: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date"),z.literal("")]),
+  phase: z.string().max(80).optional(),
+  details: z.string().max(2000).optional(),
   done: z.boolean(),
 });
 export type TaskValues = z.infer<typeof taskSchema>;

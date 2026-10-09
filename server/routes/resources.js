@@ -1,3 +1,4 @@
+import { prepareTools } from "../services/prepareTools.js";
 import { replaceBusinessName } from "../services/businessName.js";
 import { gemini } from "../services/gemini.js";
 import { recordRevision } from "../revisions.js";
@@ -16,7 +17,7 @@ import {
 export const resources = Router();
 const minor = z.number().int().min(0).max(1e8);
 const finance = z.object({
-  currency: z.enum(["PHP", "USD", "EUR", "GBP", "SGD"]),
+  currency: z.enum(["PHP", "USD", "EUR", "GBP", "SGD", "AUD", "CAD", "NZD", "HKD", "CNY", "JPY", "KRW", "INR", "MYR", "THB", "IDR", "VND", "AED", "SAR", "CHF"]),
   capitalMinor: minor,
   priceMinor: minor,
   variableMinor: minor,
@@ -104,11 +105,13 @@ resources.put("/plans/:planId", async (req, res) => {
   await req.plan.save();
   res.json(req.plan);
 });
+resources.post("/plans/:planId/prepare-tools", async (req,res) => res.json(await prepareTools(req.plan)));
 resources.get("/plans/:planId/finance", (req, res) =>
   res.json(req.plan.finance),
 );
 resources.put("/plans/:planId/finance", async (req, res) => {
   req.plan.finance = finance.parse(req.body);
+  if(req.plan.toolPreparation) req.plan.toolPreparation = {...req.plan.toolPreparation, missing:[], sources:[], manuallyEdited:true};
   if (req.plan.sections[5]) req.plan.sections[5].status = "draft";
   if (req.plan.sections[6]) req.plan.sections[6].status = "draft";
   await req.plan.save();
@@ -131,7 +134,9 @@ for (const [resource, Model, schema, param] of [
     LaunchTask,
     z.object({
       title: z.string().trim().min(1).max(160),
-      dueDate: date,
+      dueDate: z.union([date,z.literal("")]),
+      phase: z.string().max(80).optional(),
+      details: z.string().max(2000).optional(),
       done: z.boolean().default(false),
     }),
     "taskId",
@@ -140,6 +145,7 @@ for (const [resource, Model, schema, param] of [
   const base = "/plans/:planId/" + resource;
   async function invalidate(plan) {
     if (resource === "budget-items") {
+      if(plan.toolPreparation) plan.toolPreparation={...plan.toolPreparation,costsMissing:false};
       for (const index of [5, 6]) {
         if (plan.sections[index]?.draft) plan.sections[index].status = "draft";
       }
@@ -175,6 +181,7 @@ for (const [resource, Model, schema, param] of [
           runValidators: true,
         })
       : null;
+    if (item) await invalidate(req.plan);
     return item
       ? res.json(item)
       : res.status(404).json({ error: "Record not found." });

@@ -68,9 +68,9 @@ export function taskSummary(tasks, today) {
     total: tasks.length,
     completed,
     percent: tasks.length ? Math.round((completed / tasks.length) * 100) : 0,
-    overdue: tasks.filter((t) => !t.done && t.dueDate < today).length,
+    overdue: tasks.filter((t) => !t.done && t.dueDate && t.dueDate < today).length,
     upcoming: tasks
-      .filter((t) => !t.done && t.dueDate >= today)
+      .filter((t) => !t.done && t.dueDate && t.dueDate >= today)
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
       .slice(0, 5),
   };

@@ -24,7 +24,7 @@ type Item = {
   amountMinor: number;
   quantity: number;
 };
-type Task = TaskValues & { _id: string };
+type Task = TaskValues & { _id: string; phase?:string; details?:string; links?:string[] };
 type Summary = {
   currency: string;
   startup: number;
@@ -62,13 +62,6 @@ export function Workbench({
   mode: "money" | "launch";
   isDemo: boolean;
 }) {
-  const [suggestions, setSuggestions] = useState<{tasks?:{title:string;reason:string}[];values?:{field:"capital"|"price"|"variable"|"units";value:number;source:string}[]} | null>(null);
-  const [suggesting,setSuggesting] = useState(false);
-  async function suggest(choice: "money"|"launch"|"template") {
-    setSuggesting(true);setError("");
-    try {setSuggestions(await api(base+"/tool-suggestions","POST",{mode:choice}));}
-    catch(e){setError((e as Error).message);}finally{setSuggesting(false);}
-  }
   const base = "/plans/" + planId;
   const [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
@@ -105,13 +98,17 @@ export function Workbench({
     resolver: zodResolver(taskSchema),
     defaultValues: { title: "", dueDate: today(), done: false },
   });
-  const [savedUnits, setSavedUnits] = useState(0);
+  const [derived,setDerived] = useState<{missing:string[];costsMissing?:boolean;stale?:boolean} | null>(null);
+  const [editFinance,setEditFinance] = useState(false);
+
   const { reset } = form;
   const load = useCallback(async () => {
     if (isDemo) return;
     setLoading(true);
     setError("");
     try {
+      let preparation: {missing:string[];costsMissing?:boolean;stale?:boolean} | null = null;
+      try { preparation = await api(base + "/prepare-tools", "POST"); setDerived(preparation); } catch(e) { setError((e as Error).message); setDerived({missing:["Unverified inputs"],costsMissing:true}); }
       if (mode === "money") {
         const [f, i, s, b] = await Promise.all([
           api<Finance>(base + "/finance"),
@@ -126,17 +123,17 @@ export function Workbench({
           variable: f.variableMinor / 100,
           units: f.units,
         });
-        setSavedUnits(f.units);
+
         setItems(i);
         setSummary(s);
         setEven(b);
-        setScenario([]);
+        setScenario(preparation && !preparation.missing.length && !preparation.costsMissing ? await api(base + "/scenario-comparisons", "POST", {units:[Math.floor(f.units * 0.7),f.units,Math.ceil(f.units * 1.3)]}) : []);
       } else {
         const [t, s] = await Promise.all([
           api<Task[]>(base + "/tasks"),
           api<TasksSummary>(base + "/task-summary?today=" + today()),
         ]);
-        setTasks(t);
+        setTasks(t.sort((a,b)=>(a.phase || "2").localeCompare(b.phase || "2")));
         setStats(s);
       }
     } catch (e) {
@@ -216,19 +213,12 @@ export function Workbench({
           <Button onClick={() => setNotice("")}>Continue</Button>
         </Modal>
       )}
-      <div className="tool-suggestions"><Button variant="secondary" disabled={suggesting || loading} onClick={()=>void suggest(mode)}>{suggesting ? "Preparing suggestions…" : mode === "money" ? "Use values from my plan" : "Generate from my plan"}</Button>{mode === "launch" && <Button variant="secondary" disabled={suggesting || loading} onClick={()=>void suggest("template")}>Use a checklist template</Button>}<p>{mode === "money" ? "Review extracted values before saving. Missing numbers stay unchanged." : "Generate tailored tasks, use section templates, or add your own."}</p></div>
-      {suggestions && <Modal title={mode === "money" ? "Values from your plan" : "Suggested launch steps"} onClose={()=>setSuggestions(null)}>
-        {suggestions.values?.map(v=><div className="suggestion-item" key={v.field}><strong>{v.field}: {v.value}</strong><p>{v.source}</p></div>)}
-        {suggestions.values?.length===0 && <p>No clear values found. Enter your assumptions manually.</p>}
-        {suggestions.tasks?.filter(t=>!tasks.some(saved=>saved.title===t.title)).map(t=><div className="suggestion-item" key={t.title}><strong>{t.title}</strong><p>{t.reason}</p><Button variant="secondary" onClick={()=>{task.reset({title:t.title,dueDate:today(),done:false});setSuggestions(null);setEditing({kind:"task"});}}>Choose and set date</Button></div>)}
-        {suggestions.tasks?.length===0 && <p>Draft your plan sections to create relevant tasks.</p>}
-        <Button variant="secondary" onClick={()=>setSuggestions(null)}>Close</Button>
-        {!!suggestions.values?.length && <Button onClick={()=>{suggestions.values?.forEach(v=>form.setValue(v.field,v.value,{shouldDirty:true,shouldValidate:true}));setSuggestions(null);setNotice("Values filled in. Review and save your assumptions.");}}>Fill in these values</Button>}
-      </Modal>}
+      {derived?.stale && <p className="soft-note">The plan has changed since these tools were prepared. Review your saved figures and tasks.</p>}
       {mode === "money" ? (
         <>
           <section className="tool-card">
-            <h2>Your sales assumptions</h2>
+            <div className="tool-heading"><h2>Plan-derived assumptions</h2><Button variant="secondary" onClick={()=>setEditFinance(v=>!v)}>{editFinance ? "Close editing" : "Edit assumptions"}</Button></div>
+            {derived && (derived.missing.length>0 || derived.costsMissing) && <p role="status">Not specified in your plan: {[...derived.missing,...(derived.costsMissing?["cost breakdown"]:[])].join(", ")}. Calculations below are incomplete until these values are supplied.</p>}
             <p>
               Estimate one product or service. Changing currency does not convert amounts.
             </p>
@@ -246,8 +236,8 @@ export function Workbench({
               <div className="tool-grid">
                 <label>
                   Currency
-                  <select {...form.register("currency")}>
-                    {["PHP", "USD", "EUR", "GBP", "SGD"].map((c) => (
+                  <select disabled={!editFinance} {...form.register("currency")}>
+                    {["PHP", "USD", "EUR", "GBP", "SGD", "AUD", "CAD", "NZD", "HKD", "CNY", "JPY", "KRW", "INR", "MYR", "THB", "IDR", "VND", "AED", "SAR", "CHF"].map((c) => (
                       <option key={c}>{c}</option>
                     ))}
                   </select>
@@ -264,6 +254,7 @@ export function Workbench({
                         }[k]
                       }
                       <input
+                        readOnly={!editFinance}
                         type="number"
                         min="0"
                         step={k === "units" ? "1" : "0.01"}
@@ -278,7 +269,7 @@ export function Workbench({
                   ),
                 )}
               </div>
-              <Button type="submit" disabled={loading}>Save assumptions</Button>
+              {editFinance && <Button type="submit" disabled={loading}>Save assumptions</Button>}
             </form>
           </section>
           <section className="tool-card">
@@ -368,11 +359,12 @@ export function Workbench({
                         }[k]
                       }
                     </span>
-                    <strong>{money(summary[k])}</strong>
+                    <strong>{derived && (derived.missing.length>0 || derived.costsMissing) ? "Needs inputs" : money(summary[k])}</strong>
+                    <small>{({startup:"One-time costs before opening.",fixed:"Recurring monthly costs, independent of sales.",fundingGap:"Startup costs minus available capital, if positive.",revenue:"Price per sale multiplied by monthly sales.",expenses:"Variable costs plus recurring monthly costs.",profit:"Revenue minus operating expenses, before tax."})[k]}</small>
                   </div>
                 ))}
               </div>
-              <p>
+              <div hidden={!!derived && (derived.missing.length>0 || !!derived.costsMissing)}><p>
                 Profit margin:{" "}
                 {summary.margin === null
                   ? "Not applicable without revenue"
@@ -391,31 +383,12 @@ export function Workbench({
                   : even?.units + " sales per month"}
                 . Contribution per sale: {money(even?.contribution || 0)}.
               </p>
+              </div><details className="money-glossary"><summary>What do these terms mean?</summary><p><strong>Capital:</strong> funds available to start. <strong>Variable cost:</strong> cost incurred for each sale. <strong>Contribution:</strong> price minus variable cost per sale.</p><p><strong>Break-even:</strong> monthly sales needed to cover fixed costs. <strong>Profit margin:</strong> operating profit as a percentage of revenue. <strong>Runway:</strong> months remaining cash can cover projected losses.</p></details>
               <p className="soft-note">
                 Working estimates only. Excludes taxes, debt payments and
                 working-capital timing. Revenue = price × sales; profit =
                 revenue − variable costs − fixed costs.
               </p>
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    const u = savedUnits;
-                    setScenario(
-                      await api(base + "/scenario-comparisons", "POST", {
-                        units: [Math.floor(u * 0.7), u, Math.ceil(u * 1.3)],
-                      }),
-                    );
-                  } catch (e) {
-                    setError((e as Error).message);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                Compare 70%, 100% and 130% of monthly sales
-              </Button>
               {scenario.length > 0 && (
                 <div className="table-scroll">
                   <table>
@@ -469,18 +442,22 @@ export function Workbench({
           {!tasks.length ? (
             <p>Your checklist is empty. Add your first launch step.</p>
           ) : (
-            tasks.map((t) => (
+            tasks.map((t, index) => (
+              <div key={t._id}>
+              {(index === 0 || tasks[index-1].phase !== t.phase) && <h3 className="launch-phase">{t.phase || "2. Operations & funding"}</h3>}
               <div className="resource-row launch-task" key={t._id}>
                 <div className="task-copy">
+                  {t.details && <p>{t.details}</p>}
+                  {t.links?.map((link,i)=><a className="agency-link" href={link} key={link} target="_blank" rel="noreferrer">Agency guide {i+1}</a>)}
                   <strong>
                     {t.done ? "✓ " : ""}
                     {t.title}
                   </strong>
                   <p>
-                    Due {t.dueDate} ·{" "}
+                    {t.dueDate ? "Due " + t.dueDate : "Set a target date"} ·{" "}
                     {t.done
                       ? "Complete"
-                      : t.dueDate < today()
+                      : t.dueDate && t.dueDate < today()
                         ? "Overdue"
                         : "To do"}
                   </p>
@@ -503,7 +480,7 @@ export function Workbench({
                     Delete
                   </Button>
                 </div>
-              </div>
+              </div></div>
             ))
           )}
         </section>
@@ -584,6 +561,8 @@ export function Workbench({
               Due date
               <input type="date" {...task.register("dueDate")} />
             </label>
+              <label>Phase<select {...task.register("phase")}>{["1. Registration & compliance","2. Operations & funding","3. Market launch","4. Monitor & improve"].map(p=><option key={p}>{p}</option>)}</select></label>
+              <label>Details and documents<textarea {...task.register("details")} maxLength={2000}/></label>
             <label>
               <input type="checkbox" {...task.register("done")} />
               Completed

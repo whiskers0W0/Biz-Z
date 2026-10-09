@@ -191,3 +191,54 @@ Removed the optional business-location selection from discovery at the user's re
 ## Commit verification (8 October 2026)
 
 At the user's request, pending work is grouped into database/backend and connected frontend/documentation commits using the configured Adraneda identity. This grouping records the actual changed areas, not proof of exclusive authorship or completion of other members' assignments. Production build, ESLint, all nine automated tests and git diff --check passed. The existing bundle-size warning remains. Live Atlas/Gemini and full visual/PDF verification remain outstanding.
+
+## Workspace recovery and chat clarity (8 October 2026)
+
+Unavailable database/auth services now produce an explicit connection error. Plan URLs show a retry screen for failed workspace loads and a sign-in prompt for unauthenticated missing plans, rather than a misleading not-found page. Successful sign-in retains an owned requested plan route. Initial workspace loading now uses the animated bee with a one-second minimum (no artificial delay for reduced motion). Existing locked-tool routes also render the completion gate in the workspace outlet.
+
+Section chat adds readable speaker bubbles, a topic label, automatic transcript scrolling, suggested-reply labels and larger responsive controls. Stale choices are cleared during requests; server guidance explicitly ties choices to the current question and section. Build and all nine tests passed; tests mock AI. Local API health reports database connected with auth/AI configured, which does not verify live AI generation. Full browser visual and live conversational verification remain pending.
+
+## Inline manual draft editing (8 October 2026)
+
+Replaced the manual-edit accordion with an accessible pencil button beside Your draft. Editing replaces the draft preview in place, focuses a full-width textarea, and shows Save changes/Cancel. Cancel restores the pre-edit draft/status; successful saving uses existing persistence and review invalidation. History and Zee submissions are disabled while manually editing to avoid conflicting changes. Unsaved-navigation protection remains. Production build and lint pass; browser interaction/visual verification remains pending.
+
+## Location picker and local competitor lookup (8 October 2026)
+
+Added Google Places autocomplete and a click-to-pin map dialog alongside Country and city. Selection requires confirmation; pin coordinates and optional place ID persist in validated profile fields. Editing the text clears stale coordinates. Pins can be given a user-defined label; reverse geocoding is not implemented. Text entry remains available if Maps fails.
+
+Gemini receives the location and coordinates and is asked for a local-fit hypothesis and relevant competitor search category. Each idea offers an on-demand Google Places text search with up to five business names, addresses, Maps links and map markers. These are potential competitors, not an exhaustive market study; location bias is not a strict radius. Results stay in page memory and are not automatically saved or fed into SWOT drafts. Scores retain their deterministic profile/budget/time basis.
+
+Build, lint and all ten tests passed, including coordinate persistence, bounds validation and clearing stale pins. Browser confirmed the location control and dialog; live Maps returned InvalidKeyMapError with the supplied key. Autocomplete, pin interactions and competitor results therefore remain blocked pending a valid key. Implemented against Google's Place Autocomplete Widget and Text Search (New) documentation. Dependency installation also reported three existing dependency advisories (one high, two critical); production-only audit reports source-map-js high. Remediation is not included in this feature change.
+
+## Read-only selected location (8 October 2026)
+
+Country and city is now read-only and can only be changed through the search/map picker. Removed manual label editing inside the dialog as well; search results retain their returned address and map pins retain their coordinate label. Existing saved values are preserved. This supersedes the earlier manual-entry fallback; a working Maps connection is now needed to choose a different location.
+
+## Entry animation trigger correction (8 October 2026)
+
+Removed the branded splash and minimum delay from initial page load. Landing-page Sign in, Get started/Start my plan and Explore workspace now trigger the bee transition explicitly before opening their destination. The transition waits for session initialization and respects reduced motion. Authentication submission retains its existing loading feedback. Build and lint pass; browser timing verification remains pending.
+
+## Completion, automatic tools and presentation (8 October 2026)
+
+The final reviewed section now leads to Review & export. After all eight sections are reviewed, the server starts a single shared preparation request; opening Money Lab or Launch checklist also prepares existing completed plans. Exact draft quotes are required for extracted figures. Missing inputs are flagged instead of being presented as verified zero values. Existing user data is retained, and subsequent plan changes produce a stale-data reminder. Money Lab automatically loads calculations and sales scenarios, with editable assumptions and a glossary. Automatic preparation requires the signed-in server workflow and configured Gemini; the local demo does not claim live derivation.
+
+Launch tasks are phased, editable, and begin with Philippine registration/compliance. Agency links and document guidance use DTI, SEC, CDA, BIR and local-government sources. The supplied Lesson 4.2 PDF was read as reference, not authority to submit documents. Outdated annual BIR registration fees and receipt terminology were corrected using current BIR guidance. Local and sector requirements remain conditional, not a claim of a complete legal assessment. Sources: https://web-services.bir.gov.ph/newbizreg/ ; https://bir-cdn.bir.gov.ph/BIR/pdf/CDR%20-%202025.pdf ; https://bir-cdn.bir.gov.ph/local/pdf/RMC%20No.%2014-2024.pdf ; https://esparc.sec.gov.ph/ ; https://cda.gov.ph/services/regulatory-services/registration/ ; https://quezoncity.gov.ph/qcitizen-guides/opening-a-business-in-qc/ .
+
+Ideas show top-three ranking and aligned cards without score-details accordions. Profile confirmation displays working-style chips. Tile grids use complete four/two-column layouts. Location is labeled as the intended business location, with current-position permission and reverse geocoding; coordinates remain a disclosed fallback when lookup fails. This supersedes the earlier note that reverse geocoding was absent. Live Google access remains unverified. Currency choices expanded to 20, with no implied exchange conversion. Dropdown arrows have consistent spacing. Plan icons grow to a flower as reviewed progress increases. Draft actions/status are grouped, and formal document headings/justification apply to preview and PDF. Existing prose is not silently rewritten; new AI draft instructions require formal grammar and headings.
+
+Gemini 2.5 Flash requests use thinkingBudget 0, shorter chat history and less duplicated context, with the API key unchanged. This reduces configured processing overhead; latency and response-quality improvements have not been benchmarked live. Reference: https://ai.google.dev/gemini-api/docs/generate-content/thinking .
+
+Verification: production build and ESLint pass; eleven automated tests pass, including owned-plan automatic extraction, registration ordering, idempotence and preservation of edited tasks. Tests mock Gemini and use a disposable MongoDB. Live Maps/Gemini, complete browser visual checks and exported PDF visual inspection remain unverified. Existing bundle-size warning remains.
+
+## Full-request follow-up audit (8 October 2026)
+
+Audited the twelve requested areas against implementation, including completion gates, automatic tools, profile/location, ranking, document layout, progress indicators and AI configuration. Fixed issues found during this pass:
+- Removed obsolete suggestion/generation UI instead of hiding it with an attribute that its flex CSS could override.
+- Re-prepares changed, fully reviewed plans. Generated fields and tasks refresh only while matching their previous generated snapshot; manual edits, completed tasks and deletions are retained. Finance updates check the plan timestamp to avoid replacing concurrent plan edits. Missing legacy financial inputs remain flagged.
+- Corrected existing budget-item update routes to invalidate financial/summary review, consistent with cost creation/deletion.
+- Consistent alphabetical tie-breaking for top-three rank labels and highlighting; work-preference copy replaces outdated skills wording.
+- Completed dashboard progress also blooms. Page headings avoid duplicate punctuation. Formal preview follows the PDF section order, and PDF subheadings avoid starting at the page foot.
+
+Verification: eleven tests pass, now also checking refreshed derived inputs after revision, preserved edited tasks, financial-review invalidation on cost edits and rejection of unsupported source quotes without changing saved finance/costs. Build and lint pass. Browser verified the user-triggered entry loading state, 8/8 flower in the library, enabled final-section Review & export button, confirmation and successful review-page navigation.
+
+Remaining verification gaps: browser PDF download observation timed out; no claim of successful PDF export/visual verification in this pass. Live Gemini latency/quality, current-location permission and Google place-name lookup remain unverified. Automatic tools require the signed-in backend; local demo does not provide live derivation. Original prose is not automatically grammar-rewritten. Existing dependency/bundle and submission blockers above remain. No key change, commit or push was performed.

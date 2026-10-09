@@ -19,10 +19,11 @@ export const profileFormSchema = z.object({
   hours: z.number().min(1).max(168),
   capital: z.number().min(0).max(1e12),
   monthly: z.number().min(0).max(1e12),
+  locationPoint: z.object({lat:z.number().min(-90).max(90),lng:z.number().min(-180).max(180),placeId:z.string().max(300).optional()}).optional(),
   location: z.string().trim().min(1, "Enter your city and country").max(200),
   currency: z
     .string()
-    .refine((c) => ["PHP", "USD", "EUR", "GBP", "SGD"].includes(c)),
+    .refine((c) => ["PHP", "USD", "EUR", "GBP", "SGD", "AUD", "CAD", "NZD", "HKD", "CNY", "JPY", "KRW", "INR", "MYR", "THB", "IDR", "VND", "AED", "SAR", "CHF"].includes(c)),
 });
 export type ProfileValues = z.infer<typeof profileFormSchema>;
 export const messageSchema = z.object({

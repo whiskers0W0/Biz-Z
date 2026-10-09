@@ -9,7 +9,7 @@ User-reported focus areas (not a claim of commit ownership):
 | Member | Focus |
 | --- | --- |
 | Ann Nicole P. Adraneda | Database and backend |
-| Rhianna Mikaella Gomez | Backend |
+| Rhianna Mikaella R. Gomez | Backend |
 | Lorenzo Carlos R. Tan | Frontend |
 
 See [team responsibilities](docs/TEAM.md) for proposed review/defense assignments. Every member must understand and verify the code they present. Do not fabricate contribution history.

@@ -71,3 +71,9 @@ Section update and section Zee requests require every preceding section to be re
 ### Plan-based tool suggestions
 
 POST /api/plans/:planId/tool-suggestions accepts mode money, launch or template. Money returns values with exact supporting draft quotes; launch returns AI task titles and reasons; template creates suggestions from existing drafted sections without AI. Suggestions do not persist changes. Missing drafts return 400 for AI modes, malformed/unsupported output returns 502, and another owner's plan returns 404. Users review and save through existing finance/task endpoints.
+
+### Automatic completed-plan tools
+
+`POST /api/plans/:planId/prepare-tools` requires the owned plan to have all eight nonempty drafts reviewed. Prepares financial assumptions, costs and phased launch tasks using Gemini and verified source quotes; subsequent calls reuse results until draft content changes. On change, untouched generated data can refresh while manual edits/deletions are preserved. Returns preparation metadata including missing financial fields and missing cost breakdown. Final section review also starts this preparation asynchronously.
+
+Launch task inputs additionally accept optional `phase` and `details`, and an empty `dueDate` for unscheduled tasks. Automatically generated tasks include agency `links`. Budget-item updates invalidate financial and summary reviews. Currency enums support PHP, USD, EUR, GBP, SGD, AUD, CAD, NZD, HKD, CNY, JPY, KRW, INR, MYR, THB, IDR, VND, AED, SAR and CHF; changing the currency does not convert amounts.

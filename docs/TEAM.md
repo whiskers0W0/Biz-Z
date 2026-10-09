@@ -1,6 +1,6 @@
 # Team responsibilities and defense preparation
 
-Confirmed focus areas supplied by Ann Nicole: Ann Nicole P. Adraneda works on database/backend; Rhianna Mikaella Gomez on backend; Lorenzo Carlos R. Tan on frontend. The breakdown below is a proposed division for verification, refinement and presentation, not a statement that those members authored the listed code.
+Confirmed focus areas supplied by Ann Nicole: Ann Nicole P. Adraneda works on database/backend; Rhianna Mikaella R. Gomez on backend; Lorenzo Carlos R. Tan on frontend. The breakdown below is a proposed division for verification, refinement and presentation, not a statement that those members authored the listed code.
 
 | Member | Suggested work to own and verify | Defense explanation |
 | --- | --- | --- |

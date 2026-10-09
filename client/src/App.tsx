@@ -1,7 +1,7 @@
 import { Adviser } from "./Adviser";
 import { PlanSettings } from "./PlanSettings";
 import { Workbench } from "./Workbench";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
@@ -67,6 +67,7 @@ function App() {
   const [dirty, setDirty] = useState(false);
   const { page, params, navigateTo, blocker } = useWorkspaceNavigation(dirty);
   const [loading, setLoading] = useState(true);
+  const [entryTarget, setEntryTarget] = useState<Page | "login" | null>(null);
   const [connectionError, setConnectionError] = useState("");
   const [health, setHealth] = useState({
     database: false,
@@ -94,7 +95,7 @@ function App() {
         const status = await api<typeof health>("/health");
         if (cancelled) return;
         setHealth(status);
-        if (!status.database || !status.auth) return;
+        if (!status.database || !status.auth) throw new Error("Your account is temporarily unavailable. Please retry shortly.");
         const current = await api<User>("/me");
         const saved = await api<Plan[]>("/plans");
         if (cancelled) return;
@@ -143,6 +144,16 @@ function App() {
     setMobileMenu(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  const finishEntry = useEffectEvent((target: Page | "login") => {
+    if (target === "login") setAuthMode("login");
+    else navigate(target);
+    setEntryTarget(null);
+  });
+  useEffect(() => {
+    if (!entryTarget || loading) return;
+    const timer = window.setTimeout(() => finishEntry(entryTarget), window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900);
+    return () => window.clearTimeout(timer);
+  }, [entryTarget, loading]);
   async function createPlan(name: string, description: string, idea?: string) {
     setBusy(true);
     try {
@@ -347,7 +358,7 @@ function App() {
           <div className="plans-grid">
             {plans.map((plan) => (
               <article className="plan-card" key={plan._id}>
-                <span className="module-icon color-0">🌱</span>
+                <span className={"module-icon growth-stage growth-" + Math.min(4,Math.floor(plan.sections.filter(s=>s.status === "reviewed").length/2))} aria-label={plan.sections.filter(s=>s.status === "reviewed").length === 8 ? "Fully bloomed" : "Growing plan"}>{["🌱","🌿","🪴","🌷","🌻"][Math.min(4,Math.floor(plan.sections.filter(s=>s.status === "reviewed").length/2))]}</span>
                 <h2>{plan.name}</h2>
                 <p>
                   {plan.description || "Something wonderful is taking shape."}
@@ -406,6 +417,7 @@ function App() {
             setDirty(false);
             navigateTo("/plans/" + active._id);
           }}
+          onReview={() => navigate("review")}
           onSection={(i) => {
             if (
               i > 0 &&
@@ -484,7 +496,7 @@ function App() {
               </span>
             ))}
           </div>
-          <h3>How you like to work</h3>
+          <h3>Your working style</h3>
           <div className="chips">{(profile.workStyles || []).map(t => <span className="pill lavender" key={t}>{t}</span>)}</div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={() => navigate("onboarding")}>
@@ -509,9 +521,9 @@ function App() {
     ),
     landing: (
       <Landing
-        onStart={() => navigate("start")}
-        onWorkspace={() => navigate("dashboard")}
-        onLogin={() => setAuthMode("login")}
+        onStart={() => setEntryTarget("start")}
+        onWorkspace={() => setEntryTarget("dashboard")}
+        onLogin={() => setEntryTarget("login")}
       />
     ),
     start: (
@@ -532,9 +544,10 @@ function App() {
   };
   return (
     <div className={page === "landing" ? "public-shell" : "app-shell"}>
-      {(loading || busy) && (
+      {(entryTarget || busy) && (
         <LoadingScreen
-          label={loading ? "Opening Biz-Z…" : "Saving your changes…"}
+          branded={!!entryTarget}
+          label={entryTarget ? "Getting ready…" : "Saving your changes…"}
         />
       )}
       {page === "landing" ? (
@@ -664,7 +677,7 @@ function App() {
               </div>
             </header>
             <main>
-              {isDemo && (
+              {isDemo && !connectionError && (
                 <div className="demo-line">
                   <span>
                     <span className="status-dot" />
@@ -746,7 +759,7 @@ function App() {
                     {!planComplete && <p className="tool-lock-note"><Lock size={14} /> {completed}/8 reviewed · Finish all sections to unlock.</p>}
                   </section>
                 )}
-              {connectionError && (
+              {connectionError && !params.planId && (
                 <div className="error-message" role="alert">
                   {connectionError}{" "}
                   <button onClick={() => window.location.reload()}>
@@ -759,6 +772,26 @@ function App() {
                   <Bee size={80} />
                   <h2>Opening your workspace…</h2>
                 </div>
+              ) : params.planId && connectionError ? (
+                <section className="empty-state connection-recovery" role="alert">
+                  <Bee size={100} />
+                  <h2>Your plan couldn’t load yet</h2>
+                  <p>We couldn’t connect to your account. Retry to load your saved plan.</p>
+                  <Button onClick={() => window.location.reload()}>Retry connection</Button>
+                </section>
+              ) : params.planId && !active && !user ? (
+                <section className="empty-state connection-recovery">
+                  <Bee size={100} />
+                  <h2>Sign in to open your plan</h2>
+                  <p>Use the account where you saved it.</p>
+                  <Button onClick={() => setAuthMode("login")}>Sign in</Button>
+                </section>
+              ) : lockedTool ? (
+                <section className="empty-state">
+                  <Lock size={32} /><h2>Complete your business plan first</h2>
+                  <p>Review all 8 sections to unlock this page.</p>
+                  <Button onClick={() => openSection(Math.max(0, active!.sections.findIndex(s => s.status !== "reviewed")))}>Continue my plan</Button>
+                </section>
               ) : (
                 <Outlet context={views} />
               )}
@@ -799,13 +832,14 @@ function App() {
           onClose={() => setAuthMode(null)}
           onSuccess={async (u) => {
             const [saved] = await Promise.all([api<Plan[]>("/plans"), new Promise(resolve => setTimeout(resolve, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900))]);
+            setConnectionError("");
             setUser(u);
             setProfile({ ...emptyProfile, ...u.profile });
             setPlans(saved);
             setActiveId(saved[0]?._id || "");
             setAuthMode(null);
             setDirty(false);
-            navigateTo(page === "adviser" ? "/adviser" : saved.length ? "/plans/" + saved[0]._id : "/start");
+            navigateTo(params.planId && saved.some(p => p._id === params.planId) ? window.location.pathname : page === "adviser" ? "/adviser" : saved.length ? "/plans/" + saved[0]._id : "/start");
           }}
         />
       )}

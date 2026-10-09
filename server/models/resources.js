@@ -11,6 +11,7 @@ export const BudgetItem = mongoose.model(
   new Schema(
     {
       plan: planRef,
+      generatedKey: String,
       name: { type: String, required: true, trim: true, maxlength: 120 },
       category: { type: String, enum: ["startup", "monthly"], required: true },
       amountMinor: {
@@ -36,8 +37,12 @@ export const LaunchTask = mongoose.model(
   new Schema(
     {
       plan: planRef,
+      generatedKey: String,
       title: { type: String, required: true, trim: true, maxlength: 160 },
-      dueDate: { type: String, required: true, validate:v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v },
+      dueDate: { type: String, default:"", validate:v=>v === "" ||/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v },
+      phase: {type:String,default:"2. Operations & funding"},
+      details: {type:String,maxlength:2000,default:""},
+      links: [String],
       done: { type: Boolean, default: false },
     },
     { timestamps: true },
@@ -57,7 +62,7 @@ export const BusinessIdea = mongoose.model(
       currency: {
         type: String,
         default: "PHP",
-        enum: ["PHP", "USD", "EUR", "GBP", "SGD"],
+        enum: ["PHP", "USD", "EUR", "GBP", "SGD", "AUD", "CAD", "NZD", "HKD", "CNY", "JPY", "KRW", "INR", "MYR", "THB", "IDR", "VND", "AED", "SAR", "CHF"],
       },
     },
     { timestamps: true },

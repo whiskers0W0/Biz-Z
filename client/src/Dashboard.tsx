@@ -207,7 +207,7 @@ export function Dashboard({
               }}
             >
               <div>
-                <span>🌱</span>
+                <span aria-label={completed === 8 ? "Fully bloomed" : "Growing plan"}>{["🌱","🌿","🪴","🌷","🌻"][Math.min(4,Math.floor(completed/2))]}</span>
                 <strong>{progress}%</strong>
                 <small>of your plan</small>
               </div>

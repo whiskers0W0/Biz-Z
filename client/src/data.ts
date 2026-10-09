@@ -7,6 +7,7 @@ export type Profile = {
   capital: number;
   monthly: number;
   location: string;
+  locationPoint?: { lat:number; lng:number; placeId?:string };
   currency: string;
 };
 export type Section = {
@@ -30,6 +31,8 @@ export type Plan = {
   updatedAt: string;
 };
 export type Idea = {
+  locationFit?: string;
+  competitorQuery?: string;
   category?: string;
   monthlyCost?: number;
   assumptions?: string;

@@ -1,3 +1,5 @@
+import { LocationPicker } from "./LocationPicker";
+import { LocalCompetition } from "./LocalCompetition";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileFormSchema } from "./schemas/forms";
@@ -134,22 +136,14 @@ export function Onboarding({
       )}
       {step === 3 && (
         <div className="onboard-form">
-          <label>
-            Country and city
-            <input
-              value={data.location}
-              onChange={(e) => setData({ ...data, location: e.target.value })}
-              placeholder="e.g. Quezon City, Philippines"
-              maxLength={200}
-            />
-          </label>
+          <LocationPicker value={data.location} point={data.locationPoint} onChange={(location, locationPoint) => setData({...data, location, locationPoint})} />
           <label>
             Currency
             <select
               value={data.currency}
               onChange={(e) => setData({ ...data, currency: e.target.value })}
             >
-              {["PHP", "USD", "EUR", "GBP", "SGD"].map((c) => (
+              {["PHP", "USD", "EUR", "GBP", "SGD", "AUD", "CAD", "NZD", "HKD", "CNY", "JPY", "KRW", "INR", "MYR", "THB", "IDR", "VND", "AED", "SAR", "CHF"].map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </select>
@@ -208,9 +202,7 @@ export function Onboarding({
             {data.currency} {data.capital.toLocaleString()} starting capital ·{" "}
             {data.currency} {data.monthly.toLocaleString()}/month budget
           </p>
-          <p>
-            {data.workStyles?.join(", ") || "No work preferences selected."}
-          </p>
+          <h3>Your working style</h3><div className="chips">{data.workStyles?.length ? data.workStyles.map(t=><span className="pill lavender" key={t}>{t}</span>) : <p>No work preferences selected.</p>}</div>
         </div>
       )}
       {Object.entries(profileErrors).map(([key, e]) => (
@@ -313,7 +305,7 @@ export function Ideas({
           <h3>{loading ? "Zee is finding your matches…" : ideas.length ? "Ideas for you" : "Find your best fit"}</h3>
           <p>
             {profile.interests.length === 5
-              ? `Based on ${profile.interests.join(", ")}.`
+              ? "Based on your Interests, Personality, and Location."
               : "Tell us what you love so we can find a starting point that fits."}
           </p>
           {loading && <div className="idea-loading-track" role="progressbar" aria-label="Finding business ideas"><span /></div>}
@@ -342,7 +334,7 @@ export function Ideas({
       )}
       {ideas.length > 0 && <>
         <p className="helper-text">{isDemo ? "Sample ideas. Sign in for AI suggestions and ranking." : "Profile fit, not a success prediction. Cost and time are AI estimates."}</p>
-        {!isDemo && <details className="soft-note"><summary>How ranking works</summary><p>Interests: 40 points. Skills: 25. Budget: 20. Time: 15. Biz-Z calculates scores from your profile and each idea’s requirements. AI estimates can be wrong.</p></details>}
+        {!isDemo && <details className="soft-note"><summary>How ranking works</summary><p>Interests: 40 points. Work preferences: 25. Budget: 20. Time: 15. Biz-Z calculates scores from your profile and each idea’s requirements. AI estimates can be wrong.</p></details>}
         <div className="tool-grid">
           <label>Search ideas<input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search your suggestions" /></label>
           {!isDemo && <label>Sort by<select value={sort} onChange={e => setSort(e.target.value)}><option value="score">Best match</option><option value="capital">Lowest starting cost</option><option value="hours">Fewest weekly hours</option></select></label>}
@@ -352,10 +344,10 @@ export function Ideas({
       {note && <p role="status">{note}</p>}
       <div className="ideas-grid">
         {visible.map((idea, i) => (
-          <article className="idea-card" key={idea.name}>
+          <article className={"idea-card " + (ideas.slice().sort((a,b)=>(b.score || 0)-(a.score || 0) || a.name.localeCompare(b.name)).findIndex(v=>v.name===idea.name)<3 ? "top-idea" : "")} key={idea.name}>
             <div className="idea-content idea-content-structured">
               <div className="idea-meta"><span>IDEA {i + 1} · {idea.category || idea.tags?.[0] || "Business idea"}</span><span className="pill">{idea.score === undefined ? "Sample" : idea.score + "/100 fit"}</span></div>
-              <h2>{idea.name}</h2>
+              {idea.score !== undefined && ideas.slice().sort((a,b)=>(b.score || 0)-(a.score || 0) || a.name.localeCompare(b.name)).findIndex(v=>v.name===idea.name)<3 && <span className="rank-badge">Top {ideas.slice().sort((a,b)=>(b.score || 0)-(a.score || 0) || a.name.localeCompare(b.name)).findIndex(v=>v.name===idea.name)+1} match</span>}<h2>{idea.name}</h2>
               <p>{idea.description}</p>
               <h4>Why it fits you</h4>
               <p>{idea.why}</p>
@@ -364,11 +356,13 @@ export function Ideas({
                 <div><span>Estimated monthly cost</span><strong>{idea.monthlyCost === undefined ? "Not estimated" : new Intl.NumberFormat(undefined, {style: "currency", currency: idea.currency || profile.currency}).format(idea.monthlyCost)}</strong></div>
                 {idea.hours !== undefined && <small>{idea.hours} hours/week</small>}
               </div>
+              {idea.locationFit && <><h4>Why this location</h4><p>{idea.locationFit}</p></>}
+              <LocalCompetition idea={idea} profile={profile}/>
               <h4>Assumptions to check</h4>
               <p>{idea.assumptions || idea.needs}</p>
               <h4>{idea.firstStep ? "Your first step" : "Something to test"}</h4>
               <p>{idea.firstStep || idea.challenge}</p>
-              {idea.reasons && <details className="idea-score-details"><summary>Score details</summary><ul>{idea.reasons.map(r => <li key={r}>{r}</li>)}</ul></details>}
+
               <Button
                 disabled={busy}
                 onClick={() => createPlan("Untitled business", idea.description)}

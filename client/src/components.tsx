@@ -131,7 +131,7 @@ export function PageHeading({
         <div className="eyebrow">{eyebrow}</div>
         <h1>
           {title}
-          <span className="yellow-text">.</span>
+          {!/[.!?]$/.test(title.trim()) && <span className="yellow-text">.</span>}
         </h1>
         <p>{text}</p>
       </div>

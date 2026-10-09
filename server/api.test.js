@@ -505,3 +505,56 @@ test('plan tool suggestions use owned drafts without saving assumptions or tasks
  } finally {globalThis.fetch=original;delete process.env.GEMINI_API_KEY;}
  await owner.delete(base).expect(200);
 });
+
+ test('map coordinates persist, validate bounds and clear on manual location changes', async () => {
+ const profile=(await owner.get('/api/me').expect(200)).body.profile;
+ const locationPoint={lat:14.65,lng:121.03,placeId:'test-place'};
+ await owner.put('/api/profile').send({...profile,location:'Quezon City, Philippines',locationPoint}).expect(200);
+ assert.deepEqual((await owner.get('/api/me')).body.profile.locationPoint,locationPoint);
+ await owner.put('/api/profile').send({...profile,locationPoint:{lat:91,lng:121}}).expect(400);
+ await owner.put('/api/profile').send({...profile,location:'Manila',locationPoint:undefined}).expect(200);
+ assert.equal((await owner.get('/api/me')).body.profile.locationPoint,undefined);
+ });
+
+test('completed plans automatically derive tools once, protect ownership and retain edits', async () => {
+ const {Plan}=await import('./models/index.js');
+ const p=(await owner.post('/api/plans').send({name:'Prepared coffee',description:'Coffee takeaway'}).expect(201)).body;
+ const base=`/api/plans/${p._id}`;
+ await owner.post(base+'/prepare-tools').expect(400);
+ const draft='Capital PHP 20000. Price PHP 80. Variable cost PHP 30. Monthly sales 100. Rent PHP 2000.';
+ await Plan.updateOne({_id:p._id},{$set:{sections:p.sections.map(s=>({...s,draft,status:'reviewed'}))}});
+ const original=globalThis.fetch;
+ let calls=0;
+ process.env.GEMINI_API_KEY='test-key';
+ const result={values:[{field:'capital',value:20000,source:draft},{field:'price',value:80,source:draft},{field:'variable',value:30,source:draft},{field:'units',value:100,source:draft}],costs:[{name:'Rent',category:'monthly',amount:2000,source:draft}],tasks:[{title:'Test coffee recipes',phase:'2. Operations & funding',details:'Prepare coffee for the first sales trial.'}]};
+ globalThis.fetch=async()=>{calls++;return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:JSON.stringify(result)}]}}]})};};
+ try {
+  await other.post(base+'/prepare-tools').expect(404);
+  const prepared=(await owner.post(base+'/prepare-tools').expect(200)).body;
+  assert.deepEqual(prepared.missing,[]);
+  assert.equal((await owner.get(base+'/finance')).body.priceMinor,8000);
+  assert.equal((await owner.get(base+'/budget-items')).body.length,1);
+  const tasks=(await owner.get(base+'/tasks')).body;
+  assert.equal(tasks.length,5);
+  assert.equal(tasks[0].phase,'1. Registration & compliance');
+  assert.equal(tasks[0].dueDate,'');
+  await owner.put(base+'/tasks/'+tasks[0]._id).send({...tasks[0],title:'My registration task'}).expect(200);
+  await owner.post(base+'/prepare-tools').expect(200);
+  assert.equal(calls,1);
+  assert.equal((await owner.get(base+'/tasks')).body[0].title,'My registration task');
+  const changed=draft+' Monthly sales now 120.';
+  result.values.find(v=>v.field==='units').value=120;
+  result.values.find(v=>v.field==='units').source='Monthly sales now 120.';
+  await Plan.updateOne({_id:p._id},{$set:{'sections.0.draft':changed}});
+  await owner.post(base+'/prepare-tools').expect(200);
+  assert.equal(calls,2);
+  assert.equal((await owner.get(base+'/finance')).body.units,120);
+  assert.equal((await owner.get(base+'/tasks')).body[0].title,'My registration task');
+  const cost=(await owner.get(base+'/budget-items')).body[0];
+  await owner.put(base+'/budget-items/'+cost._id).send({...cost,amountMinor:250000}).expect(200);
+  assert.equal((await owner.get(base)).body.sections[5].status,'draft');
+  await owner.post(base+'/prepare-tools').expect(400);
+
+ } finally {globalThis.fetch=original;delete process.env.GEMINI_API_KEY;}
+ await owner.delete(base).expect(200);
+});
