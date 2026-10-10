@@ -281,10 +281,11 @@ export function MoneyLab({
                   onClick={() => switchTo(() => open(undefined, values.kind))}
                 >
                   <Plus size={16} />
-                  New
+                  Start fresh
                 </button>
               </div>
-              <div className="tool-grid">
+              <p className="calculator-purpose">{config.description}</p>
+              <div className="tool-grid calculator-identity">
                 <label>
                   Calculation name
                   <input
@@ -306,6 +307,8 @@ export function MoneyLab({
                     ))}
                   </select>
                 </label>
+              </div>
+              <div className="tool-grid calculator-inputs">
                 {config.fields.map((f) => (
                   <label key={config.id + f.key}>
                     {f.label}
@@ -314,12 +317,13 @@ export function MoneyLab({
                       type="number"
                       min="0"
                       step={f.unit === "number" ? "1" : "any"}
-                      placeholder="Enter amount"
+                      placeholder={f.unit === "percent" ? "Enter percentage" : f.unit === "number" ? "Enter quantity" : "Enter amount"}
+                      aria-describedby={`help-${config.id}-${f.key}`}
                       {...form.register(`inputs.${f.key}`, {
                         valueAsNumber: true,
                       })}
                     />
-                    <small>{f.help}</small>
+                    <small id={`help-${config.id}-${f.key}`}>{f.help}</small>
                     {form.formState.errors.inputs?.[f.key] && (
                       <small className="error-text">
                         {String(form.formState.errors.inputs[f.key]?.message)}
@@ -328,17 +332,17 @@ export function MoneyLab({
                   </label>
                 ))}
               </div>
-              <p className="soft-note">
-                Changing currency changes the label, not the amounts.
+              <p className="calculator-currency-note">
+                Currency labels only. No conversion.
               </p>
             </section>
             <section
               className="tool-card calculator-results"
               aria-label="Calculation results"
             >
-              <h2>Your numbers</h2>
+              <div className="tool-heading"><h2>Your results</h2><span className="calculator-live">Updates as you type</span></div>
               {!parsed.success ? (
-                <p>Enter all values to see your results.</p>
+                <div className="calculator-empty"><Calculator size={28} aria-hidden="true" /><p>Enter your numbers to see the result.</p></div>
               ) : (
                 <>
                   <div className="calculator-metrics">
@@ -365,11 +369,11 @@ export function MoneyLab({
                     )}
                 </>
               )}
-              <details>
-                <summary>How it works</summary>
-                <p>{config.formula}</p>
-                <p>{config.note}</p>
-              </details>
+              <section className="calculator-explainer" aria-label="How this calculation works">
+                <h3><BookOpen size={18} aria-hidden="true" />How it works</h3>
+                <p className="calculator-formula">{config.formula}</p>
+                <p className="calculator-limits">{config.note}</p>
+              </section>
               <div className="money-save">
                 <Button type="submit" disabled={busy || !parsed.success}>
                   {busy ? "Saving…" : id ? "Save changes" : "Save calculation"}

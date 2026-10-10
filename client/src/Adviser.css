@@ -24,6 +24,9 @@
   border-radius: 12px;
   background: transparent;
   overflow-wrap: anywhere;
+  transition: background-color 160ms ease, border-color 160ms ease,
+    box-shadow 160ms ease, transform 160ms ease;
+  cursor: pointer;
 }
 .adviser-history > button.selected {
   background: #fff1b2;
@@ -109,6 +112,40 @@
 }
 .adviser-history button:focus-visible {
   outline: 3px solid #7d9d63;
+  outline-offset: 3px;
+}
+.adviser-history > button:not(.btn):focus-visible {
+  background: #f2ecfa;
+  border-color: #c7b3dc;
+}
+.adviser-history > button.selected:focus-visible {
+  background: #ffe99a;
+  border-color: #d5ad32;
+}
+@media (hover: hover) {
+  .adviser-history > button:not(.btn):not(:disabled):hover {
+    background: #f2ecfa;
+    border-color: #c7b3dc;
+    box-shadow: 0 3px 0 #e0d4ec;
+    transform: translateY(-2px);
+  }
+  .adviser-history > button.selected:not(:disabled):hover {
+    background: #ffe99a;
+    border-color: #d5ad32;
+    box-shadow: 0 3px 0 #e5cb72;
+  }
+}
+.adviser-history > button:not(.btn):not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.adviser-history > button:disabled {
+  cursor: wait;
+}
+@media (prefers-reduced-motion: reduce) {
+  .adviser-history > button:not(.btn) { transition: none; }
+  .adviser-history > button:not(.btn):hover,
+  .adviser-history > button:not(.btn):active { transform: none; }
 }
 @media (max-width: 800px) {
   .adviser-layout {

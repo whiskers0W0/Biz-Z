@@ -550,6 +550,7 @@ export function Workbench({
           onClose={() => setEditing(null)}
         >
           <form
+            className="launch-task-form"
             onSubmit={task.handleSubmit((v) =>
               mutate(
                 base + "/tasks" + (editing.id ? "/" + editing.id : ""),
@@ -559,25 +560,31 @@ export function Workbench({
             )}
           >
             <label>
-              Task
-              <input {...task.register("title")} />
+              Task name
+              <input {...task.register("title")} maxLength={160} placeholder="e.g. Register your business name" aria-invalid={!!task.formState.errors.title} aria-describedby={task.formState.errors.title ? "task-title-error" : undefined} />
+              {task.formState.errors.title && <small id="task-title-error" className="error-text">{task.formState.errors.title.message}</small>}
             </label>
-            <label>
-              Due date
-              <input type="date" {...task.register("dueDate")} />
-            </label>
+            <div className="launch-task-schedule">
               <label>Phase<select {...task.register("phase")}>{["1. Registration & compliance","2. Operations & funding","3. Market launch","4. Monitor & improve"].map(p=><option key={p}>{p}</option>)}</select></label>
-              <label>Details and documents<textarea {...task.register("details")} maxLength={2000}/></label>
-            <label>
+              <label>
+                Due date (optional)
+                <input type="date" {...task.register("dueDate")} />
+              </label>
+            </div>
+              <label>Details and documents (optional)<textarea {...task.register("details")} rows={3} maxLength={2000} placeholder="Steps, documents to prepare, or notes…"/></label>
+            <label className="launch-task-completed">
               <input type="checkbox" {...task.register("done")} />
-              Completed
+              <span>Already completed</span>
             </label>
-            {Object.entries(task.formState.errors).map(([key, e]) => (
+            {Object.entries(task.formState.errors).filter(([key]) => key !== "title").map(([key, e]) => (
               <p className="error-text" key={key}>
                 {e.message}
               </p>
             ))}
-            <Button type="submit" disabled={loading}>Save task</Button>
+            <div className="modal-actions launch-task-footer">
+              <Button variant="secondary" disabled={loading} onClick={() => setEditing(null)}>Cancel</Button>
+              <Button type="submit" disabled={loading}>{loading ? "Saving…" : editing.id ? "Save changes" : "Add task"}</Button>
+            </div>
           </form>
         </Modal>
       )}

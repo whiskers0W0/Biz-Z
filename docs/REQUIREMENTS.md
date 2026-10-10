@@ -270,3 +270,15 @@ Removed financial extraction, finance writes, budget generation/deletion and fin
 ### Launch checklist progress and touch controls (10 October 2026)
 
 Added an accessible completion progress bar, a concise completion hint, overdue emphasis, and clearer phase dividers. Completion targets and edit/delete controls now have 44px touch areas with responsive spacing and visible keyboard feedback. Task persistence and Money Lab behavior are unchanged. Production build and lint pass; browser visual verification remains pending. The existing bundle-size warning remains.
+
+### Always-visible Money Lab guidance (10 October 2026)
+
+Replaced the calculator explanation accordion with an always-visible formula and limitations panel across all six calculators. Separated scenario details from numeric inputs, tightened field spacing, added a clearer empty-results state and live-update label, and improved narrow-screen stacking. Input help is programmatically associated with its field; quantity and percentage placeholders now match their units. Calculation logic and saving are unchanged. Production build and lint pass; browser visual verification remains pending. Existing bundle-size warning remains.
+
+### Zee chat-history hover feedback (10 October 2026)
+
+Saved conversation cards now show a lavender hover/focus highlight and subtle raised edge; the selected chat retains a stronger yellow treatment. Added pressed feedback, focus outline spacing, disabled-state handling and reduced-motion support. Production build passed; browser visual verification remains pending.
+
+### Add/edit launch task modal polish (10 October 2026)
+
+Improved task labels and placeholders, identified optional fields, placed title validation beside its input, and grouped phase/date scheduling. Completion is now a single aligned checkbox row with a larger clickable area. A separated footer provides Cancel and Add task/Save changes, with saving feedback and mobile-width actions. Existing validation and persistence are retained. Production build passed; browser visual verification remains pending.
