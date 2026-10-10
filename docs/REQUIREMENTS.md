@@ -286,3 +286,7 @@ Improved task labels and placeholders, identified optional fields, placed title 
 ### Starting-point card hover styling (10 October 2026)
 
 Discovery and existing-idea cards now use lavender and sage hover tints matching their icons, raised edges, arrow feedback, and pressed states. Keyboard focus uses the same palette with a visible outline. Hover animation is limited to hover-capable devices and disabled for reduced-motion preferences. Production build passed; browser visual verification remains pending.
+
+### Readability and responsive layout pass (10 October 2026)
+
+Removed the dashboard rail tagline. Increased explicit 7–12px interface text styles to a 13px minimum, including mobile overrides. Added 320px viewport support, scrollable sidebar navigation, wrapping progress/actions, 16px mobile form controls, narrower-screen card stacking, and compact modal/chat spacing. Decorative dashboard hero art is hidden on mobile to protect text space. Production build and lint passed; a complete browser/device viewport audit remains pending, so responsiveness across every page is not claimed as verified. Existing bundle-size warning remains.

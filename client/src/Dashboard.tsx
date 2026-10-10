@@ -2,7 +2,6 @@ import beePortrait from "./assets/mascot/bee.png";
 import {
   ArrowRight,
   CheckCircle2,
-  Flower2,
   Lock,
   MessageCircle,
   Sparkles,
@@ -279,9 +278,6 @@ export function Dashboard({
               </button>
             </div>
           </section>
-          <div className="rail-footer">
-            DREAM IT. PLAN IT. BIZ-Z IT. <Flower2 size={17} />
-          </div>
         </aside>
       </div>
     </>
