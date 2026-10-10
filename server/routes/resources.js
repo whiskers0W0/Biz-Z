@@ -111,7 +111,6 @@ resources.get("/plans/:planId/finance", (req, res) =>
 );
 resources.put("/plans/:planId/finance", async (req, res) => {
   req.plan.finance = finance.parse(req.body);
-  if(req.plan.toolPreparation) req.plan.toolPreparation = {...req.plan.toolPreparation, missing:[], sources:[], manuallyEdited:true};
   if (req.plan.sections[5]) req.plan.sections[5].status = "draft";
   if (req.plan.sections[6]) req.plan.sections[6].status = "draft";
   await req.plan.save();
@@ -145,7 +144,6 @@ for (const [resource, Model, schema, param] of [
   const base = "/plans/:planId/" + resource;
   async function invalidate(plan) {
     if (resource === "budget-items") {
-      if(plan.toolPreparation) plan.toolPreparation={...plan.toolPreparation,costsMissing:false};
       for (const index of [5, 6]) {
         if (plan.sections[index]?.draft) plan.sections[index].status = "draft";
       }

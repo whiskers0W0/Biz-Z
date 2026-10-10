@@ -109,7 +109,7 @@ export function Workbench({
     setError("");
     try {
       let preparation: {missing:string[];costsMissing?:boolean;stale?:boolean} | null = null;
-      try { preparation = await api(base + "/prepare-tools", "POST"); setDerived(preparation); } catch(e) { setError((e as Error).message); setDerived({missing:["Unverified inputs"],costsMissing:true}); }
+      try { if (mode === "launch") await api(base + "/prepare-tools", "POST"); preparation = {missing:[]}; setDerived(preparation); } catch(e) { setError((e as Error).message); setDerived({missing:["Unverified inputs"],costsMissing:true}); }
       if (mode === "money") {
         const [f, i, s, b] = await Promise.all([
           api<Finance>(base + "/finance"),

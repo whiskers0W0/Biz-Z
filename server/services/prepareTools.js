@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { gemini } from "./gemini.js";
 import { Plan } from "../models/index.js";
-import { BudgetItem, LaunchTask } from "../models/resources.js";
+import { LaunchTask } from "../models/resources.js";
 import { createHash } from "node:crypto";
 const running = new Map();
 export const planFingerprint = (plan) =>
@@ -71,7 +71,12 @@ async function prepare(plan) {
     plan.toolPreparation?.status === "ready" &&
     plan.toolPreparation.fingerprint === planFingerprint(plan)
   )
-    return plan.toolPreparation;
+    return {
+      status: "ready",
+      scope: "launch",
+      fingerprint: plan.toolPreparation.fingerprint,
+      preparedAt: plan.toolPreparation.preparedAt,
+    };
   const fingerprint = planFingerprint(plan);
   const sections = plan.sections.map((s, index) => ({
     index,
@@ -79,31 +84,10 @@ async function prepare(plan) {
     draft: s.draft,
   }));
   const raw = await gemini(
-    `Extract financial inputs and practical launch tasks from this completed business plan. Return JSON {values:[{field,value,source}],costs:[{name,category,amount,source}],tasks:[{title,phase,details}]}. values fields: capital,price,variable,units. Costs categories startup (one-time), monthly (fixed recurring only, excluding per-unit variable costs). Monetary amounts are major units in ${plan.finance.currency}. Include only explicit figures with exact supporting source quotes from drafts. Do not invent, double count totals plus components, convert currencies, or infer missing numbers. Use one consistent product/service sales model; omit incompatible multi-product assumptions. Max 4 values, 15 costs. Max 8 tailored tasks from plan content, phase one of '2. Operations & funding','3. Market launch','4. Monitor & improve'. Do not generate legal tasks (added separately). No invented dates. Context: ${JSON.stringify(sections)}`,
+    `Create practical launch tasks from this completed business plan. Return JSON {tasks:[{title,phase,details}]}. Max 8 tailored tasks from plan content, phase one of '2. Operations & funding','3. Market launch','4. Monitor & improve'. Registration and legal tasks are added separately. No invented dates, amounts or commitments. Do not extract financial inputs, calculate amounts or create budgets. Context: ${JSON.stringify(sections)}`,
   );
-  const source = z.string().min(1).max(2000);
-  const amount = z.number().min(0).max(1e6);
   const result = z
     .object({
-      values: z
-        .array(
-          z.object({
-            field: z.enum(["capital", "price", "variable", "units"]),
-            value: amount,
-            source,
-          }),
-        )
-        .max(4),
-      costs: z
-        .array(
-          z.object({
-            name: z.string().min(1).max(120),
-            category: z.enum(["startup", "monthly"]),
-            amount,
-            source,
-          }),
-        )
-        .max(15),
       tasks: z
         .array(
           z.object({
@@ -119,16 +103,7 @@ async function prepare(plan) {
         .max(8),
     })
     .parse(JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, "")));
-  if (
-    new Set(result.values.map((v) => v.field)).size !== result.values.length ||
-    [...result.values, ...result.costs].some(
-      (v) => !sections.some((s) => s.draft.includes(v.source)),
-    ) ||
-    result.values.some((v) => v.field === "units" && !Number.isInteger(v.value))
-  )
-    throw new Error(
-      "Could not verify derived figures. Your saved data is unchanged.",
-    );
+
   const fresh = await Plan.findById(plan._id);
   if (
     planFingerprint(fresh) !== fingerprint ||
@@ -139,33 +114,6 @@ async function prepare(plan) {
     );
 
   const previous = fresh.toolPreparation;
-  const financeIsEmpty = [
-    "capitalMinor",
-    "priceMinor",
-    "variableMinor",
-    "units",
-  ].every((k) => !fresh.finance[k]);
-  const missing = [];
-  for (const field of ["capital", "price", "variable", "units"]) {
-    const key = field === "units" ? "units" : field + "Minor";
-    const old = previous?.sources?.find((v) => v.field === field);
-    const next = result.values.find((v) => v.field === field);
-    const untouched =
-      !previous?.manuallyEdited &&
-      (financeIsEmpty ||
-        (old &&
-          fresh.finance[key] ===
-            (field === "units" ? old.value : Math.round(old.value * 100))) ||
-        previous?.missing?.includes(field));
-    if (untouched) {
-      fresh.finance[key] = next
-        ? field === "units"
-          ? next.value
-          : Math.round(next.value * 100)
-        : 0;
-      if (!next) missing.push(field);
-    } else if (!previous && !fresh.finance[key]) missing.push(field);
-  }
   async function sync(Model, entries, prefix) {
     const existing = await Model.find({ plan: plan._id });
     const snapshots = {};
@@ -198,16 +146,6 @@ async function prepare(plan) {
     }
     return snapshots;
   }
-  const costSnapshots = await sync(
-    BudgetItem,
-    result.costs.map((c) => ({
-      name: c.name,
-      category: c.category,
-      amountMinor: Math.round(c.amount * 100),
-      quantity: 1,
-    })),
-    "cost",
-  );
   const taskSnapshots = await sync(
     LaunchTask,
     [...registrationTasks, ...result.tasks].map((t) => ({
@@ -221,15 +159,19 @@ async function prepare(plan) {
     status: "ready",
     fingerprint,
     preparedAt: new Date().toISOString(),
-    sources: result.values,
-    missing,
-    costsMissing: !(await BudgetItem.countDocuments({ plan: plan._id })),
-    snapshots: { ...previous?.snapshots, ...costSnapshots, ...taskSnapshots },
-    manuallyEdited: previous?.manuallyEdited || false,
+    scope: "launch",
+    snapshots: {
+      ...Object.fromEntries(
+        Object.entries(previous?.snapshots || {}).filter(([key]) =>
+          key.startsWith("task-"),
+        ),
+      ),
+      ...taskSnapshots,
+    },
   };
   const updated = await Plan.updateOne(
     { _id: plan._id, updatedAt: fresh.updatedAt },
-    { $set: { finance: fresh.finance, toolPreparation: metadata } },
+    { $set: { toolPreparation: metadata } },
   );
   if (!updated.matchedCount)
     throw new Error("Your plan changed. Reopen this tool after reviewing it.");

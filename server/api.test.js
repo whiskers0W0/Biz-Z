@@ -516,7 +516,7 @@ test('plan tool suggestions use owned drafts without saving assumptions or tasks
  assert.equal((await owner.get('/api/me')).body.profile.locationPoint,undefined);
  });
 
-test('completed plans automatically derive tools once, protect ownership and retain edits', async () => {
+test('completed plans prepare only checklist tasks and never derive financial data', async () => {
  const {Plan}=await import('./models/index.js');
  const p=(await owner.post('/api/plans').send({name:'Prepared coffee',description:'Coffee takeaway'}).expect(201)).body;
  const base=`/api/plans/${p._id}`;
@@ -531,9 +531,9 @@ test('completed plans automatically derive tools once, protect ownership and ret
  try {
   await other.post(base+'/prepare-tools').expect(404);
   const prepared=(await owner.post(base+'/prepare-tools').expect(200)).body;
-  assert.deepEqual(prepared.missing,[]);
-  assert.equal((await owner.get(base+'/finance')).body.priceMinor,8000);
-  assert.equal((await owner.get(base+'/budget-items')).body.length,1);
+  assert.equal(prepared.scope,'launch');
+  assert.equal((await owner.get(base+'/finance')).body.priceMinor,0);
+  assert.equal((await owner.get(base+'/budget-items')).body.length,0);
   const tasks=(await owner.get(base+'/tasks')).body;
   assert.equal(tasks.length,5);
   assert.equal(tasks[0].phase,'1. Registration & compliance');
@@ -542,15 +542,19 @@ test('completed plans automatically derive tools once, protect ownership and ret
   await owner.post(base+'/prepare-tools').expect(200);
   assert.equal(calls,1);
   assert.equal((await owner.get(base+'/tasks')).body[0].title,'My registration task');
+  const {BudgetItem}=await import('./models/resources.js');
+  await BudgetItem.create({plan:p._id,name:'Existing rent',category:'monthly',amountMinor:123400,quantity:1,generatedKey:'cost-0'});
+  await Plan.updateOne({_id:p._id},{$set:{'finance.units':77}});
   const changed=draft+' Monthly sales now 120.';
   result.values.find(v=>v.field==='units').value=120;
   result.values.find(v=>v.field==='units').source='Monthly sales now 120.';
   await Plan.updateOne({_id:p._id},{$set:{'sections.0.draft':changed}});
   await owner.post(base+'/prepare-tools').expect(200);
   assert.equal(calls,2);
-  assert.equal((await owner.get(base+'/finance')).body.units,120);
+  assert.equal((await owner.get(base+'/finance')).body.units,77);
   assert.equal((await owner.get(base+'/tasks')).body[0].title,'My registration task');
   const cost=(await owner.get(base+'/budget-items')).body[0];
+  assert.equal(cost.amountMinor,123400);
   await owner.put(base+'/budget-items/'+cost._id).send({...cost,amountMinor:250000}).expect(200);
   assert.equal((await owner.get(base)).body.sections[5].status,'draft');
   await owner.post(base+'/prepare-tools').expect(400);

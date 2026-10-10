@@ -87,3 +87,7 @@ Authenticated endpoints independent of business plans:
 - `DELETE /api/calculations/:calculationId`: delete an owned scenario.
 
 Body: `{title, kind, currency, inputs}`. Kinds: `profit`, `pricing`, `break-even`, `runway`, `loan`, `roi`. Required numeric fields and formulas are defined in `shared/moneyLab.js`; all values must be finite and nonnegative, with additional calculator-specific validation. Responses recompute `results` from validated inputs. Inaccessible IDs return 404. Device-only demo saves do not call these endpoints. Existing plan-finance endpoints remain for compatibility and do not back standalone calculator records.
+
+### Preparation cleanup (10 October 2026)
+
+`POST /api/plans/:planId/prepare-tools` now prepares only launch checklist tasks. Its response identifies `scope: "launch"`; no financial values, cost extraction, missing-finance metadata, or budget writes are performed. Existing cached checklists remain valid. The earlier automatic-financial-preparation description is superseded. Legacy financial CRUD endpoints and stored data remain for compatibility; standalone `/calculations` remains independent.
