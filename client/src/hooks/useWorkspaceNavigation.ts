@@ -27,6 +27,7 @@ export const pagePaths: Partial<Record<Page, string>> = {
   profile: "/profile",
   help: "/help",
   adviser: "/adviser",
+  money: "/money",
   "not-found": "/not-found",
 };
 export function useWorkspaceNavigation(dirty: boolean) {

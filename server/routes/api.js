@@ -1,3 +1,4 @@
+import {registerCalculations} from './calculations.js';
 import { prepareTools } from "../services/prepareTools.js";
 import { replaceBusinessName } from "../services/businessName.js";
 import { gemini } from "../services/gemini.js";
@@ -128,6 +129,7 @@ router.use("/", async (req, res, next) => {
   }
 });
 router.use(resources);
+registerCalculations(router);
 router.get("/conversations", async (req, res) =>
   res.json(
     await Conversation.find({ owner: req.user.id })

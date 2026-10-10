@@ -1,3 +1,4 @@
+import { MoneyLab } from "./MoneyLab";
 import { Adviser } from "./Adviser";
 import { PlanSettings } from "./PlanSettings";
 import { Workbench } from "./Workbench";
@@ -22,6 +23,7 @@ import {
   BookOpen,
   ChevronRight,
   Compass,
+  Calculator,
   Flower2,
   House,
   LogOut,
@@ -86,7 +88,7 @@ function App() {
   const completed =
     active?.sections.filter((s) => s.status === "reviewed").length || 0;
   const planComplete = !!active && active.sections.length === 8 && active.sections.every(s => s.status === "reviewed" && s.draft.trim());
-  const lockedTool = ["review", "money", "launch"].includes(page) && !!active && !planComplete;
+  const lockedTool = ["review", "launch"].includes(page) && !!active && !planComplete;
   const isDemo = !user;
   useEffect(() => {
     let cancelled = false;
@@ -125,11 +127,11 @@ function App() {
     }
   }, [plans, profile, user]);
   function navigate(next: Page) {
-    if (["review", "money", "launch"].includes(next) && !planComplete) {
+    if (["review", "launch"].includes(next) && !planComplete) {
       setToast("Review all 8 sections to unlock this tool."); return;
     }
     if (dirty) {
-      setToast("Save your draft before leaving this section.");
+      setToast("Save your changes before leaving this page.");
       return;
     }
     const path =
@@ -263,25 +265,12 @@ function App() {
     { page: "ideas" as Page, name: "Explore ideas", icon: Compass },
     { page: "plans" as Page, name: "My business plans", icon: BookOpen },
     { page: "adviser" as Page, name: "Zee Adviser", icon: MessageCircle },
+    { page: "money" as Page, name: "Money Lab", icon: Calculator },
     { page: "profile" as Page, name: "My profile", icon: Settings },
   ];
   const views: Record<Page, ReactNode> = {
     adviser: <Adviser key={user?.id || "guest"} plans={plans} isDemo={isDemo} onSignIn={() => setAuthMode("login")} />,
-    money: active ? (
-      <Workbench
-        key={active._id + "money"}
-        planId={active._id}
-        onUpdate={(updated) =>
-          setPlans((prev) =>
-            prev.map((p) => (p._id === updated._id ? updated : p)),
-          )
-        }
-        mode="money"
-        isDemo={isDemo}
-      />
-    ) : (
-      <NotFoundPage onPlans={() => navigate("plans")} />
-    ),
+    money: <MoneyLab key={user?.id || "guest"} isDemo={isDemo} onDirty={setDirty} />,
     launch: active ? (
       <Workbench
         key={active._id + "launch"}
@@ -726,7 +715,7 @@ function App() {
                 </nav>
               )}
               {active &&
-                ["dashboard", "editor", "review", "money", "launch"].includes(
+                ["dashboard", "editor", "review", "launch"].includes(
                   page,
                 ) && (
                   <section className="plan-context" aria-label="Selected business plan">
@@ -746,9 +735,9 @@ function App() {
                         ["Overview", ""],
                         ["Build plan", "/sections/" + sectionIndex],
                         ["Review & export", "/review"],
-                        ["Money lab", "/money"],
+
                         ["Launch checklist", "/launch"],
-                      ].map(([label, suffix]) => (!planComplete && ["/review", "/money", "/launch"].includes(suffix) ? <button type="button" className="plan-tool is-locked" disabled key={label} title="Review all 8 sections to unlock"><Lock size={15} aria-hidden="true" />{label}<span className="sr-only">Locked until all sections are reviewed</span></button> : (
+                      ].map(([label, suffix]) => (!planComplete && ["/review", "/launch"].includes(suffix) ? <button type="button" className="plan-tool is-locked" disabled key={label} title="Review all 8 sections to unlock"><Lock size={15} aria-hidden="true" />{label}<span className="sr-only">Locked until all sections are reviewed</span></button> : (
                         <NavLink key={label} end={suffix === ""} to={"/plans/" + active._id + suffix}
                           className={({isActive}) => "plan-tool" + ((isActive || (label === "Build plan" && page === "editor")) ? " is-active" : "")}
                           aria-current={label === "Build plan" && page === "editor" ? "page" : undefined}>
@@ -839,7 +828,7 @@ function App() {
             setActiveId(saved[0]?._id || "");
             setAuthMode(null);
             setDirty(false);
-            navigateTo(params.planId && saved.some(p => p._id === params.planId) ? window.location.pathname : page === "adviser" ? "/adviser" : saved.length ? "/plans/" + saved[0]._id : "/start");
+            navigateTo(params.planId && saved.some(p => p._id === params.planId) ? window.location.pathname : page === "adviser" ? "/adviser" : page === "money" ? "/money" : saved.length ? "/plans/" + saved[0]._id : "/start");
           }}
         />
       )}

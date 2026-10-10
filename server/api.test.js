@@ -558,3 +558,18 @@ test('completed plans automatically derive tools once, protect ownership and ret
  } finally {globalThis.fetch=original;delete process.env.GEMINI_API_KEY;}
  await owner.delete(base).expect(200);
 });
+
+test('standalone calculations save without a plan and isolate account ownership',async()=>{
+ await request(app).get('/api/calculations').expect(401);
+ const input={title:'Coffee pricing',kind:'pricing',currency:'PHP',inputs:{cost:60,margin:40}};
+ const created=(await owner.post('/api/calculations').send(input).expect(201)).body;
+ assert.equal(created.results[0].value,100);
+ assert.equal((await owner.get('/api/calculations')).body.some(c=>c._id===created._id),true);
+ assert.equal((await other.get('/api/calculations')).body.some(c=>c._id===created._id),false);
+ await other.put('/api/calculations/'+created._id).send(input).expect(404);
+ await other.delete('/api/calculations/'+created._id).expect(404);
+ await owner.put('/api/calculations/'+created._id).send({...input,inputs:{cost:90,margin:50}}).expect(200).then(r=>assert.equal(r.body.results[0].value,180));
+ await owner.post('/api/calculations').send({...input,inputs:{cost:1,margin:100}}).expect(400);
+ await owner.delete('/api/calculations/'+created._id).expect(200);
+ assert.equal((await owner.get('/api/calculations')).body.some(c=>c._id===created._id),false);
+});

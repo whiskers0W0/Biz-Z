@@ -77,3 +77,13 @@ POST /api/plans/:planId/tool-suggestions accepts mode money, launch or template.
 `POST /api/plans/:planId/prepare-tools` requires the owned plan to have all eight nonempty drafts reviewed. Prepares financial assumptions, costs and phased launch tasks using Gemini and verified source quotes; subsequent calls reuse results until draft content changes. On change, untouched generated data can refresh while manual edits/deletions are preserved. Returns preparation metadata including missing financial fields and missing cost breakdown. Final section review also starts this preparation asynchronously.
 
 Launch task inputs additionally accept optional `phase` and `details`, and an empty `dueDate` for unscheduled tasks. Automatically generated tasks include agency `links`. Budget-item updates invalidate financial and summary reviews. Currency enums support PHP, USD, EUR, GBP, SGD, AUD, CAD, NZD, HKD, CNY, JPY, KRW, INR, MYR, THB, IDR, VND, AED, SAR and CHF; changing the currency does not convert amounts.
+
+### Standalone Money Lab (9 October 2026)
+
+Authenticated endpoints independent of business plans:
+- `GET /api/calculations`: list the current user's saved scenarios (newest first).
+- `POST /api/calculations`: create, up to 200 per user.
+- `PUT /api/calculations/:calculationId`: update an owned scenario.
+- `DELETE /api/calculations/:calculationId`: delete an owned scenario.
+
+Body: `{title, kind, currency, inputs}`. Kinds: `profit`, `pricing`, `break-even`, `runway`, `loan`, `roi`. Required numeric fields and formulas are defined in `shared/moneyLab.js`; all values must be finite and nonnegative, with additional calculator-specific validation. Responses recompute `results` from validated inputs. Inaccessible IDs return 404. Device-only demo saves do not call these endpoints. Existing plan-finance endpoints remain for compatibility and do not back standalone calculator records.

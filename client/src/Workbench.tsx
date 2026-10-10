@@ -1,5 +1,6 @@
+import { Pencil, Trash2 } from "lucide-react";
 import type { Plan } from "./data";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "./data";
@@ -148,6 +149,25 @@ export function Workbench({
     }, 0);
     return () => clearTimeout(timer);
   }, [load]);
+  const toggleLock = useRef(false);
+  const [toggling,setToggling] = useState<string|null>(null);
+  const [checkNotice,setCheckNotice] = useState("");
+  function updateChecklist(next:Task[]) {
+    setTasks(next);
+    const completed=next.filter(t=>t.done).length;
+    setStats({total:next.length,completed,percent:next.length?Math.round(completed/next.length*100):0,overdue:next.filter(t=>!t.done&&t.dueDate&&t.dueDate<today()).length,upcoming:next.filter(t=>!t.done&&t.dueDate&&t.dueDate>=today()).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,5)});
+  }
+  async function toggleTask(t:Task) {
+    if(toggleLock.current)return;
+    toggleLock.current=true;setToggling(t._id);setCheckNotice("");
+    const previous=tasks;
+    updateChecklist(tasks.map(x=>x._id===t._id?{...x,done:!t.done}:x));
+    try {
+      await api(base+"/tasks/"+t._id,"PUT",{title:t.title,dueDate:t.dueDate,phase:t.phase,details:t.details,done:!t.done});
+      setCheckNotice(t.done?"Task reopened.":"Task completed.");
+    } catch {updateChecklist(previous);setCheckNotice("Could not save the check. Please try again.");}
+    finally {toggleLock.current=false;setToggling(null);}
+  }
   async function mutate(path: string, method: string, data?: unknown) {
     setLoading(true);
     try {
@@ -427,6 +447,7 @@ export function Workbench({
               {stats?.completed || 0} of {stats?.total || 0} complete
             </h2>
             <Button
+              disabled={loading || !!toggling}
               onClick={() => {
                 task.reset({ title: "", dueDate: today(), done: false });
                 setEditing({ kind: "task" });
@@ -439,48 +460,26 @@ export function Workbench({
             {stats?.percent || 0}% complete · {stats?.overdue || 0} overdue.
             Dates use your local calendar day.
           </p>
+          <p className="checklist-save-status" role="status" aria-live="polite">{checkNotice}</p>
           {!tasks.length ? (
             <p>Your checklist is empty. Add your first launch step.</p>
           ) : (
             tasks.map((t, index) => (
               <div key={t._id}>
-              {(index === 0 || tasks[index-1].phase !== t.phase) && <h3 className="launch-phase">{t.phase || "2. Operations & funding"}</h3>}
-              <div className="resource-row launch-task" key={t._id}>
-                <div className="task-copy">
-                  {t.details && <p>{t.details}</p>}
-                  {t.links?.map((link,i)=><a className="agency-link" href={link} key={link} target="_blank" rel="noreferrer">Agency guide {i+1}</a>)}
-                  <strong>
-                    {t.done ? "✓ " : ""}
-                    {t.title}
-                  </strong>
-                  <p>
-                    {t.dueDate ? "Due " + t.dueDate : "Set a target date"} ·{" "}
-                    {t.done
-                      ? "Complete"
-                      : t.dueDate && t.dueDate < today()
-                        ? "Overdue"
-                        : "To do"}
-                  </p>
-                </div>
-                <div className="task-actions">
-                  <Button disabled={loading} variant="secondary" onClick={()=>void mutate(base+"/tasks/"+t._id,"PUT",{title:t.title,dueDate:t.dueDate,done:!t.done})}>{t.done ? "Reopen" : "Mark done"}</Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      task.reset(t);
-                      setEditing({ kind: "task", id: t._id });
-                    }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setDeleting({ kind: "task", id: t._id })}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div></div>
+                {(index===0 || tasks[index-1].phase!==t.phase) && <h3 className="launch-phase">{t.phase || "2. Operations & funding"}<span>{tasks.filter(x=>x.phase===t.phase&&x.done).length}/{tasks.filter(x=>x.phase===t.phase).length}</span></h3>}
+                <article className={"checklist-task"+(t.done?" is-complete":"")} aria-busy={toggling===t._id}>
+                  <input id={"check-"+t._id} className="launch-checkbox" type="checkbox" checked={t.done} disabled={loading || !!toggling} onChange={()=>void toggleTask(t)} />
+                  <div className="checklist-task-body">
+                    <label htmlFor={"check-"+t._id} className="checklist-title">{t.title}</label>
+                    <div className="checklist-meta"><span>{toggling===t._id?"Saving…":t.done?"Complete":t.dueDate&&t.dueDate<today()?"Overdue":"To do"}</span>{t.dueDate&&<time dateTime={t.dueDate}>Due {t.dueDate}</time>}</div>
+                    {(t.details || !!t.links?.length) && <details className="checklist-details"><summary>Details & resources</summary>{t.details&&<p>{t.details}</p>}<div className="checklist-links">{t.links?.map((link,i)=><a href={link} key={link} target="_blank" rel="noreferrer">Agency guide {i+1} ↗</a>)}</div></details>}
+                  </div>
+                  <div className="checklist-task-actions">
+                    <button type="button" disabled={loading||!!toggling} className="text-button" aria-label={"Edit "+t.title} title="Edit task" onClick={()=>{task.reset(t);setEditing({kind:"task",id:t._id});}}><Pencil size={18}/></button>
+                    <button type="button" disabled={loading||!!toggling} className="text-button" aria-label={"Delete "+t.title} title="Delete task" onClick={()=>setDeleting({kind:"task",id:t._id})}><Trash2 size={18}/></button>
+                  </div>
+                </article>
+              </div>
             ))
           )}
         </section>

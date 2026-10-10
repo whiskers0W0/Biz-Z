@@ -242,3 +242,23 @@ Audited the twelve requested areas against implementation, including completion 
 Verification: eleven tests pass, now also checking refreshed derived inputs after revision, preserved edited tasks, financial-review invalidation on cost edits and rejection of unsupported source quotes without changing saved finance/costs. Build and lint pass. Browser verified the user-triggered entry loading state, 8/8 flower in the library, enabled final-section Review & export button, confirmation and successful review-page navigation.
 
 Remaining verification gaps: browser PDF download observation timed out; no claim of successful PDF export/visual verification in this pass. Live Gemini latency/quality, current-location permission and Google place-name lookup remain unverified. Automatic tools require the signed-in backend; local demo does not provide live derivation. Original prose is not automatically grammar-rewritten. Existing dependency/bundle and submission blockers above remain. No key change, commit or push was performed.
+
+## Standalone Money Lab (9 October 2026)
+
+Supersedes the plan-linked Money Lab workflow above. Money Lab now has its own sidebar entry and `/money` route, available without a completed business plan. Previous plan money URLs redirect to it. Launch checklist remains derived from the reviewed plan; calculator scenarios do not change plans or review status. Existing legacy plan finance/budget data is preserved.
+
+Six deterministic calculators cover operating profit, target-margin pricing, break-even, cash runway, fixed-rate amortizing loan payments and period ROI. Inputs have definitions, formulas and limitations; glossary is searchable. Blank and invalid inputs do not produce results, non-positive contribution prevents a misleading break-even, zero-interest loans are supported, and non-shrinking cash has no finite runway. Currency labels do not imply conversion. Both browser and server use shared calculation/validation logic.
+
+Users can name/save, reopen/edit, copy and delete calculations. Signed-in records belong to the user, not a plan, and are isolated through owner-scoped CRUD. Demo calculations use a separate browser storage key and are explicitly device-only; they are not automatically migrated on sign-in. Unsaved changes are protected when switching calculators or leaving. API results are recomputed rather than trusted from submitted client data.
+
+Verification: 13 tests passed including six-calculator arithmetic/edge cases, standalone saving, validation and cross-account isolation. MongoDB tests required running outside the sandbox because the disposable MongoDB process failed to start inside it. Browser confirmed direct Money Lab access, instantaneous example profit results (PHP 10,000 revenue, PHP 4,000 operating profit, 40% margin), device save, reload and reopening with the same inputs/results. Existing live Atlas and full responsive visual verification limitations remain. No commit or push requested for this change.
+
+### Money Lab tile styling (9 October 2026)
+
+Calculator tiles now use six coordinated pastel palettes, topic-specific Lucide icons, raised borders/shadows and a press interaction. Selection keeps the individual palette and adds a contrasting checkmark and border, rather than relying only on color. Equal grid sizing, mobile spacing, keyboard focus and reduced-motion behavior are retained. Build and lint passed; this visual-only change does not alter calculator math or persistence. Full browser visual verification remains pending.
+
+### Direct checklist completion (10 October 2026)
+
+Launch tasks now have an accessible checkbox and clickable title for one-step completion/reopening. Progress and phase counts update immediately; saves run inline without a full-screen loader or success confirmation. Failed saves restore the previous task/progress state and show a retry message. Duplicate completion requests and conflicting edit/delete actions are blocked during saving. The revised responsive layout keeps titles and dates visible, moves long guidance into expandable details/resources, and uses compact labeled edit/delete icons. Completed tasks have a checked control, muted green background and struck-through title.
+
+Build, lint and all 13 existing automated tests passed. Browser interaction and full visual verification of the revised checklist remain unverified; automated tests cover the underlying task persistence and calculations, not the browser checkbox itself. No commit or push performed.

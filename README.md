@@ -1,6 +1,6 @@
 # Biz-Z
 
-Biz-Z helps first-time founders build a business plan in eight manageable sections. Zee, the Gemini assistant, leads short interviews, drafts prose, and revises it on request. Money lab calculates from saved inputs; AI does not perform the authoritative arithmetic.
+Biz-Z helps first-time founders build a business plan in eight manageable sections. Zee, the Gemini assistant, leads short interviews, drafts prose, and revises it on request. Money Lab is a standalone calculator workspace with saved scenarios and a searchable glossary. Its calculations run instantly without AI.
 
 ## Team
 
@@ -37,14 +37,14 @@ Build: `npm run build`. Check: `npm run lint` and `npm test`. Production: set `N
 - Account sessions in HttpOnly cookies, bcrypt password hashing and owner-scoped plans.
 - Full plan CRUD, separate section interviews, generated draft revisions and restoration history.
 - Automatic Zee introduction for empty sections; short answers, suggested buttons, essay generation and revisions.
-- Money lab: startup/monthly line totals, funding gap, revenue, expenses, operating profit, margin, runway and break-even.
+- Money Lab: monthly profit, pricing/margin, break-even, cash runway, fixed-rate loan payments and ROI. Save, reopen, edit or copy scenarios independently of a plan.
 - Sales scenarios at 70%, 100% and 130% of saved sales volume, holding saved unit costs/prices constant.
 - Catalog matching: interest overlap 40 points, skills 25, affordable capital 20, available time 15; missing inputs earn no points. Scores are not success probabilities.
 - Launch tasks with CRUD, completion percentage, overdue calculation and valid calendar dates.
 - Loading screens, operation modals, deletion confirmations, unsaved editor navigation protection, shared modal scroll locking.
 - Review/export as PDF. Executive summary unlocks after sections 1–6 are reviewed; changing those sections invalidates summary review.
 
-Money is stored as integer minor units (100 minor units = one displayed currency unit). Per-unit amounts are bounded to 1,000,000 currency units, quantities to 10,000, monthly sales to 1,000,000 and nested resources to 200 per type/plan. Arithmetic assumes a single currency and one primary product/service. Changing currency relabels values; it does not convert them. No taxes, debt payments, exchange-rate feeds, stock management or verified legal research are included.
+Legacy plan finance is stored as integer minor units (100 minor units = one displayed currency unit). Per-unit amounts are bounded to 1,000,000 currency units, quantities to 10,000, monthly sales to 1,000,000 and nested resources to 200 per type/plan. Arithmetic assumes a single currency and one primary product/service. Changing currency relabels values; it does not convert them. Standalone calculations store validated numeric inputs in displayed currency units and recompute results with shared formulas. Loan estimates exclude lender fees and insurance. Currency changes never convert amounts. No exchange-rate feeds or stock management are included.
 
 ## Structure
 
@@ -76,7 +76,7 @@ The QA fixture includes an account, bakery plan, two costs, a launch task and ca
 
 - Live Atlas was previously verified but the latest connection attempt failed during TLS negotiation. Reverify the user's network/Atlas access before presenting live persistence; do not claim the isolated QA run is Atlas.
 - Live Gemini worked earlier; current feature tests use mocked responses. Check the configured model and quota before the defense.
-- Browser-only demo plans are separate from authenticated plans. Money lab and tasks require an account.
+- Browser-only demo plans are separate from authenticated plans. Money Lab supports device-only demo saves and private account saves. Plan-derived launch tasks require an account.
 - AI may make mistakes; generated assumptions and legal details require human review. It does not verify market facts.
 - Concurrent edits in multiple tabs are not conflict-merged. Version history starts when a draft is first changed with revision support enabled.
 - PDF's built-in font targets Latin text; non-Latin scripts need an embedded font.
@@ -90,6 +90,6 @@ Frontend entry: `client/index.html`. Public assets: `client/public/`. Imported a
 
 Captured in the isolated QA workspace with disposable sample data; these do not prove live Atlas availability.
 
-![Money lab with saved inputs and computed results](docs/screenshots/money-lab.png)
+![Earlier plan-linked Money Lab (legacy screenshot)](docs/screenshots/money-lab.png)
 
 ![Restored section draft with three retained versions](docs/screenshots/restored-draft.png)

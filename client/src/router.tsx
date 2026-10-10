@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import App from "./App";
 import type { Page } from "./hooks/useWorkspaceNavigation";
 import { WorkspacePage } from "./WorkspacePage";
@@ -17,6 +17,7 @@ const routes: { path: string; page: Page }[] = [
   { path: "/plans/:planId/launch", page: "launch" },
   { path: "/profile", page: "profile" },
   { path: "/adviser", page: "adviser" },
+  { path: "/money", page: "money" },
   { path: "/help", page: "help" },
   { path: "*", page: "not-found" },
 ];
@@ -25,7 +26,7 @@ export const router = createBrowserRouter([
     element: <App />,
     children: routes.map(({ path, page }) => ({
       path,
-      element: <WorkspacePage name={page} />,
+      element: path === "/plans/:planId/money" ? <Navigate to="/money" replace /> : <WorkspacePage name={page} />,
       handle: { page },
     })),
   },
