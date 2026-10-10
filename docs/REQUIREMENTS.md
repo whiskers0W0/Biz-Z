@@ -266,3 +266,7 @@ Build, lint and all 13 existing automated tests passed. Browser interaction and 
 ### Checklist-only automatic preparation (10 October 2026)
 
 Removed financial extraction, finance writes, budget generation/deletion and financial metadata from automatic completed-plan preparation. Gemini now returns only launch tasks. The existing prepare-tools URL stays compatible, returning launch-scoped metadata; cached checklists are reused without forcing regeneration. Task snapshots still preserve edited/completed/deleted tasks. Existing plan finance and budget records are retained, and legacy explicit finance CRUD remains available for compatibility. Standalone Money Lab never calls plan preparation. Regression tests cover empty finances staying empty and existing financial inputs/budget entries remaining unchanged after plan revisions. Build, lint and all 13 tests passed. No commit/push performed.
+
+### Launch checklist progress and touch controls (10 October 2026)
+
+Added an accessible completion progress bar, a concise completion hint, overdue emphasis, and clearer phase dividers. Completion targets and edit/delete controls now have 44px touch areas with responsive spacing and visible keyboard feedback. Task persistence and Money Lab behavior are unchanged. Production build and lint pass; browser visual verification remains pending. The existing bundle-size warning remains.

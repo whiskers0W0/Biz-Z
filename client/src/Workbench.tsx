@@ -456,10 +456,14 @@ export function Workbench({
               Add a task
             </Button>
           </div>
-          <p>
-            {stats?.percent || 0}% complete · {stats?.overdue || 0} overdue.
-            Dates use your local calendar day.
-          </p>
+          <div className="launch-progress">
+            <progress aria-label="Launch checklist completion" value={stats?.completed || 0} max={stats?.total || 1} />
+            <div className="launch-progress-caption">
+              <span>{stats?.percent || 0}% complete</span>
+              {!!stats?.overdue && <span className="launch-overdue">{stats.overdue} overdue</span>}
+            </div>
+          </div>
+          <p className="launch-check-hint">Check a task to mark it complete.</p>
           <p className="checklist-save-status" role="status" aria-live="polite">{checkNotice}</p>
           {!tasks.length ? (
             <p>Your checklist is empty. Add your first launch step.</p>
@@ -468,7 +472,9 @@ export function Workbench({
               <div key={t._id}>
                 {(index===0 || tasks[index-1].phase!==t.phase) && <h3 className="launch-phase">{t.phase || "2. Operations & funding"}<span>{tasks.filter(x=>x.phase===t.phase&&x.done).length}/{tasks.filter(x=>x.phase===t.phase).length}</span></h3>}
                 <article className={"checklist-task"+(t.done?" is-complete":"")} aria-busy={toggling===t._id}>
-                  <input id={"check-"+t._id} className="launch-checkbox" type="checkbox" checked={t.done} disabled={loading || !!toggling} onChange={()=>void toggleTask(t)} />
+                  <label className="launch-check-target" title={t.done ? "Mark as to do" : "Mark complete"}>
+                    <input id={"check-"+t._id} className="launch-checkbox" type="checkbox" aria-label={(t.done ? "Reopen " : "Complete ")+t.title} checked={t.done} disabled={loading || !!toggling} onChange={()=>void toggleTask(t)} />
+                  </label>
                   <div className="checklist-task-body">
                     <label htmlFor={"check-"+t._id} className="checklist-title">{t.title}</label>
                     <div className="checklist-meta"><span>{toggling===t._id?"Saving…":t.done?"Complete":t.dueDate&&t.dueDate<today()?"Overdue":"To do"}</span>{t.dueDate&&<time dateTime={t.dueDate}>Due {t.dueDate}</time>}</div>
