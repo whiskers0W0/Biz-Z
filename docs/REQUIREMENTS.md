@@ -282,3 +282,7 @@ Saved conversation cards now show a lavender hover/focus highlight and subtle ra
 ### Add/edit launch task modal polish (10 October 2026)
 
 Improved task labels and placeholders, identified optional fields, placed title validation beside its input, and grouped phase/date scheduling. Completion is now a single aligned checkbox row with a larger clickable area. A separated footer provides Cancel and Add task/Save changes, with saving feedback and mobile-width actions. Existing validation and persistence are retained. Production build passed; browser visual verification remains pending.
+
+### Starting-point card hover styling (10 October 2026)
+
+Discovery and existing-idea cards now use lavender and sage hover tints matching their icons, raised edges, arrow feedback, and pressed states. Keyboard focus uses the same palette with a visible outline. Hover animation is limited to hover-capable devices and disabled for reduced-motion preferences. Production build passed; browser visual verification remains pending.
