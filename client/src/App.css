@@ -3213,3 +3213,32 @@ small { font-size: 13px; }
   .saved-calculations article { flex-wrap: wrap; }
 }
 @media(max-width:760px) { .flow-steps button { flex: 1 1 calc(50% - 12px); white-space: normal; text-align: left; min-height: 44px; } }
+
+/* Fit navigation to viewport height without an independently scrolling rail. */
+.sidebar { overflow: visible; padding: 22px 19px 16px; gap: 0; }
+.sidebar .brand, .sidebar nav, .sidebar-bottom { flex-shrink: 0; }
+.sidebar-caption { margin: 12px 0 22px; }
+.sidebar nav { gap: 5px; }
+.sidebar .nav-item { min-height: 44px; padding: 10px 12px; }
+.sidebar-tip { margin: 22px 0 16px; padding: 14px 14px 0; }
+.sidebar-tip > span:not(.tip-spark) { display: none; }
+.sidebar .tip-flowers { margin-top: 10px; }
+.sidebar .user-card { padding-top: 12px; margin-top: 8px; }
+.sidebar .user-card > span:not(.avatar) { min-width: 0; }
+.sidebar .user-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media(max-height:800px) {
+  .sidebar-tip { display: none; }
+  .sidebar-caption { margin-bottom: 16px; }
+}
+@media(max-height:620px) {
+  .sidebar { padding-block: 12px; }
+  .sidebar-caption { display: none; }
+  .sidebar .brand { margin-bottom: 12px; }
+  .sidebar .user-card small { display: none; }
+}
+@media(max-height:480px) {
+  .sidebar .brand { display: none; }
+  .sidebar nav { gap: 2px; }
+  .sidebar .nav-item { min-height: 36px; padding-block: 6px; }
+  .sidebar .user-card { padding-top: 6px; margin-top: 4px; }
+}

@@ -290,3 +290,7 @@ Discovery and existing-idea cards now use lavender and sage hover tints matching
 ### Readability and responsive layout pass (10 October 2026)
 
 Removed the dashboard rail tagline. Increased explicit 7–12px interface text styles to a 13px minimum, including mobile overrides. Added 320px viewport support, scrollable sidebar navigation, wrapping progress/actions, 16px mobile form controls, narrower-screen card stacking, and compact modal/chat spacing. Decorative dashboard hero art is hidden on mobile to protect text space. Production build and lint passed; a complete browser/device viewport audit remains pending, so responsiveness across every page is not claimed as verified. Existing bundle-size warning remains.
+
+### Sidebar viewport-height correction (10 October 2026)
+
+Removed the independent sidebar scroll treatment. Reduced navigation/logo/account spacing, removed the secondary decorative tip sentence, and added height-based rules that hide the decorative tip and then branding on short screens while retaining navigation, help, and account actions. Text sizes remain readable. Production build passed; browser viewport verification remains pending.
