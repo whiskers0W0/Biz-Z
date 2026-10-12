@@ -298,3 +298,10 @@ Removed the independent sidebar scroll treatment. Reduced navigation/logo/accoun
 ### Export cover and pending interface refinements (12 October 2026)
 
 Review & export accepts an optional local PNG/JPG logo up to 5 MB, validates decoding and image dimensions, previews it, supports removal, and preserves proportions on the PDF cover. Logo selection is scoped to the current plan and current view, not persisted to the account. The cover uses centered business identity and a formal Business Plan subtitle; removed the generated date and Biz-Z credit. Body typography, justified paragraphs, section pagination and contents remain, with a restrained ruled footer. Logo-free export remains supported. Profile confirmation now groups preferences and labels location/time/budget separately. Zee floats gently while ideas load, respecting reduced motion. Production build passed; live PDF rendering and browser visual verification remain pending.
+
+### Cross-page source and regression audit (12 October 2026)
+
+Reviewed route mapping and completion gates, shared navigation, landing/start, profile/onboarding, plan library/editor/review, Money Lab, checklist, adviser and Maps handling. Fixed Money Lab allowing form changes or calculator/view switching while an async save was pending, which could overwrite newly typed inputs when the saved response reset the form. Disabled current-location lookup until Maps is initialized so a Maps failure cannot start an unresolved locating state. Corrected the empty plan library telling signed-in users to create an account.
+
+Production build and lint passed before fixes; all 13 automated tests passed outside the sandbox using disposable MongoDB (sandbox startup failed). Browser access to the local dev app failed with connection-refused/timeout, so an all-page interactive/viewport audit and live Maps/Gemini/PDF checks are not verified. Existing bundle-size warning remains. Previous export/logo commit 98d3c91 was confirmed pushed.
+Post-fix production build, lint and diff checks also passed.

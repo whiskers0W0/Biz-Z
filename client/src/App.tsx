@@ -337,8 +337,8 @@ function App() {
         {plans.length === 0 ? (
           <section className="empty-state">
             <Bee size={110} />
-            <h2>Create your account.</h2>
-            <p>A few things about you. A world of possibilities.</p>
+            <h2>No business plans yet.</h2>
+            <p>Explore an idea or bring your own to get started.</p>
             <Button onClick={() => navigate("start")}>
               Get started <ArrowRight size={17} />
             </Button>

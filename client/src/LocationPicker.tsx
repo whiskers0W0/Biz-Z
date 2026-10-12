@@ -14,13 +14,14 @@ function MapPicker({ initial, onClose, onSelect }: { initial?: LocationPoint; on
   const [selection, setSelection] = useState<{ label: string; point: LocationPoint }>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
     let widget: google.maps.places.PlaceAutocompleteElement;
     let listener: google.maps.MapsEventListener;
     let marker: google.maps.marker.AdvancedMarkerElement;
     let sequence = 0;
-    const authError = () => { setError('Google rejected the Maps key. Update the key in your local configuration, then reload.'); setLoading(false); };
+    const authError = () => { setReady(false); setError('Google rejected the Maps key. Update the key in your local configuration, then reload.'); setLoading(false); };
     window.addEventListener('bizz-maps-auth-error', authError);
     async function init() {
       try {
@@ -60,11 +61,11 @@ function MapPicker({ initial, onClose, onSelect }: { initial?: LocationPoint; on
           if (!event.latLng) return;
           pickPoint.current(event.latLng.toJSON());
         });
-        setLoading(false);
+        setReady(true); setLoading(false);
       } catch(e) { if (!cancelled) {setError((e as Error).message);setLoading(false);} }
     }
     void init();
     return () => { window.removeEventListener('bizz-maps-auth-error', authError); cancelled=true; listener?.remove(); widget?.remove(); if(marker) marker.map=null; };
   }, [initial]);
-  return <Modal title="Choose your location" onClose={onClose}><div ref={search}/><Button variant="secondary" disabled={loading || locating} onClick={()=>{if(!navigator.geolocation){setError("Location is not supported by your browser.");return;}setLocating(true);navigator.geolocation.getCurrentPosition(p=>pickPoint.current({lat:p.coords.latitude,lng:p.coords.longitude}),()=>{setLocating(false);setError("Location access was denied or unavailable. Search or pin a place instead.");},{timeout:10000});}}>Use current location</Button>{locating && <p role="status">Finding the place name…</p>}{loading && <p role="status">Loading map…</p>}<p>Search a place or click the map to drop a pin.</p><div className="location-map" ref={canvas}/>{error && <p role="alert">{error}</p>}{selection && <div className="selected-location" role="status"><strong>Selected location</strong><p>{selection.label}</p></div>}<Button disabled={locating || !selection?.label.trim()} onClick={() => selection && onSelect(selection.label,selection.point)}>Use this location</Button></Modal>;
+  return <Modal title="Choose your location" onClose={onClose}><div ref={search}/><Button variant="secondary" disabled={!ready || loading || locating} onClick={()=>{if(!navigator.geolocation){setError("Location is not supported by your browser.");return;}setLocating(true);navigator.geolocation.getCurrentPosition(p=>pickPoint.current({lat:p.coords.latitude,lng:p.coords.longitude}),()=>{setLocating(false);setError("Location access was denied or unavailable. Search or pin a place instead.");},{timeout:10000});}}>Use current location</Button>{locating && <p role="status">Finding the place name…</p>}{loading && <p role="status">Loading map…</p>}<p>Search a place or click the map to drop a pin.</p><div className="location-map" ref={canvas}/>{error && <p role="alert">{error}</p>}{selection && <div className="selected-location" role="status"><strong>Selected location</strong><p>{selection.label}</p></div>}<Button disabled={locating || !selection?.label.trim()} onClick={() => selection && onSelect(selection.label,selection.point)}>Use this location</Button></Modal>;
 }

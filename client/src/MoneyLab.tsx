@@ -128,6 +128,7 @@ export function MoneyLab({
     };
   }, [isDemo]);
   const switchTo = (action: () => void) => {
+    if (busy) return;
     if (dirty) setPending(() => action);
     else action();
   };
@@ -158,6 +159,7 @@ export function MoneyLab({
             value,
           ) + (unit === "percent" ? "%" : unit === "months" ? " months" : "");
   async function save(v: CalculationInput, copy = false) {
+    if (busy) return;
     setBusy(true);
     setError("");
     try {
@@ -233,6 +235,7 @@ export function MoneyLab({
           <button
             key={key as string}
             type="button"
+            disabled={busy}
             className={tab === key ? "active" : ""}
             aria-current={tab === key ? "page" : undefined}
             onClick={() => setTab(key as string)}
@@ -257,6 +260,7 @@ export function MoneyLab({
             {calculators.map((c) => { const Icon = tileIcons[c.id]; return (
               <button
                 key={c.id}
+                disabled={busy}
                 className={`calculator-tile tile-${c.id}`}
                 type="button"
                 aria-pressed={c.id === values.kind}
@@ -273,6 +277,7 @@ export function MoneyLab({
             className="calculator-workspace"
           >
             <section className="tool-card">
+              <fieldset disabled={busy} className="calculator-fields">
               <div className="tool-heading">
                 <h2>{config.name}</h2>
                 <button
@@ -335,6 +340,7 @@ export function MoneyLab({
               <p className="calculator-currency-note">
                 Currency labels only. No conversion.
               </p>
+              </fieldset>
             </section>
             <section
               className="tool-card calculator-results"
