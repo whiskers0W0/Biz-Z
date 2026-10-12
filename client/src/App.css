@@ -385,6 +385,9 @@ main {
   filter: drop-shadow(0 8px 0 #ddbb5230);
   transform: rotate(-9deg);
 }
+.bee-halo > .zee-mascot-frame {
+  transform: translateY(-28px);
+}
 .art-spark {
   position: absolute;
   color: #d6a929;
