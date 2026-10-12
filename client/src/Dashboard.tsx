@@ -135,7 +135,7 @@ export function Dashboard({
                 title={active && completed !== 8 ? "Review all 8 sections to unlock" : undefined}
                 onClick={active ? onReview : onStart}
               >
-                {active && completed !== 8 && <Lock size={14} />}{active ? "Review & export" : "Let’s begin"}
+                {active && completed !== 8 && <Lock size={14} />}{active ? "Review & Export" : "Let’s begin"}
                 <ArrowRight size={15} />
               </button>
             </div>

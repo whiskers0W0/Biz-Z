@@ -479,7 +479,7 @@ export function Editor({
               disabled={busy || dirty || section.status !== "reviewed" || (index === 7 && !plan.sections.every(s=>s.status === "reviewed" && s.draft.trim()))}
               onClick={() => leave(index === 7 ? onReview : () => onSection(index + 1))}
             >
-              {index === 7 ? "Review & export" : "Next section"}
+              {index === 7 ? "Review & Export" : "Next section"}
               <ArrowRight size={16} />
             </button>
           </div>

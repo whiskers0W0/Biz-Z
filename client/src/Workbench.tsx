@@ -193,7 +193,7 @@ export function Workbench({
       <>
         <PageHeading
           eyebrow="YOUR PLAN TOOLS"
-          title={mode === "money" ? "Money lab" : "Launch checklist"}
+          title={mode === "money" ? "Money Lab" : "Launch Checklist"}
           text="Sign in to create your launch checklist."
         />
         <p className="soft-note">
@@ -205,7 +205,7 @@ export function Workbench({
     <>
       <PageHeading
         eyebrow="FROM PLAN TO POSSIBILITY"
-        title={mode === "money" ? "Money lab" : "Launch checklist"}
+        title={mode === "money" ? "Money Lab" : "Launch Checklist"}
         text={
           mode === "money"
             ? "See estimates from your saved inputs."
@@ -456,7 +456,7 @@ export function Workbench({
             </Button>
           </div>
           <div className="launch-progress">
-            <progress aria-label="Launch checklist completion" value={stats?.completed || 0} max={stats?.total || 1} />
+            <progress aria-label="Launch Checklist completion" value={stats?.completed || 0} max={stats?.total || 1} />
             <div className="launch-progress-caption">
               <span>{stats?.percent || 0}% complete</span>
               {!!stats?.overdue && <span className="launch-overdue">{stats.overdue} overdue</span>}

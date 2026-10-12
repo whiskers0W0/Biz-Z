@@ -261,12 +261,12 @@ function App() {
     }
   }
   const nav = [
-    { page: "dashboard" as Page, name: "My journey", icon: House },
-    { page: "ideas" as Page, name: "Explore ideas", icon: Compass },
-    { page: "plans" as Page, name: "My business plans", icon: BookOpen },
+    { page: "dashboard" as Page, name: "My Journey", icon: House },
+    { page: "ideas" as Page, name: "Explore Ideas", icon: Compass },
+    { page: "plans" as Page, name: "My Business Plans", icon: BookOpen },
     { page: "adviser" as Page, name: "Zee Adviser", icon: MessageCircle },
     { page: "money" as Page, name: "Money Lab", icon: Calculator },
-    { page: "profile" as Page, name: "My profile", icon: Settings },
+    { page: "profile" as Page, name: "My Profile", icon: Settings },
   ];
   const views: Record<Page, ReactNode> = {
     adviser: <Adviser key={user?.id || "guest"} plans={plans} isDemo={isDemo} onSignIn={() => setAuthMode("login")} />,
@@ -331,7 +331,7 @@ function App() {
         <div className="flex justify-end mb-6">
           <Button onClick={() => navigate("start")}>
             <Plus size={18} />
-            New business plan
+            New Business Plan
           </Button>
         </div>
         {plans.length === 0 ? (
@@ -591,7 +591,7 @@ function App() {
             </div>
             <div className="sidebar-bottom">
               <button className="nav-item" onClick={() => navigate("help")}>
-                <CircleHelp size={20} />A little help
+                <CircleHelp size={20} />A Little Help
               </button>
               <button
                 className="user-card"
@@ -623,28 +623,28 @@ function App() {
                   <Menu />
                 </button>
                 <span className="breadcrumb">
-                  Your workspace <ChevronRight size={13} />
+                  Your Workspace <ChevronRight size={13} />
                   <strong>
                     {page === "dashboard"
-                      ? "My journey"
+                      ? "My Journey"
                       : page === "onboarding"
-                        ? "Getting to know you"
+                        ? "Getting to Know You"
                         : page === "editor"
-                          ? "Plan builder"
+                          ? "Plan Builder"
                           : page === "review"
-                            ? "Plan preview"
+                            ? "Plan Preview"
                             : nav.find((n) => n.page === page)?.name ||
                               (page === "start"
-                                ? "Your starting point"
+                                ? "Your Starting Point"
                                 : page === "new-plan"
-                                  ? "New business plan"
+                                  ? "New Business Plan"
                                   : page === "help"
-                                    ? "A little help"
+                                    ? "A Little Help"
                                     : page === "money"
-                                      ? "Money lab"
+                                      ? "Money Lab"
                                       : page === "launch"
-                                        ? "Launch checklist"
-                                        : "Page not found")}
+                                        ? "Launch Checklist"
+                                        : "Page Not Found")}
                   </strong>
                 </span>
               </div>
@@ -679,10 +679,10 @@ function App() {
                   aria-label="Business planning stages"
                 >
                   {[
-                    { id: "start" as Page, label: "Your starting point" },
-                    { id: "ideas" as Page, label: "Your idea" },
-                    { id: "dashboard" as Page, label: "Your plan" },
-                    { id: "review" as Page, label: "Review & export" },
+                    { id: "start" as Page, label: "Your Starting Point" },
+                    { id: "ideas" as Page, label: "Your Idea" },
+                    { id: "dashboard" as Page, label: "Your Plan" },
+                    { id: "review" as Page, label: "Review & Export" },
                   ].map((step, i) => (
                     <button
                       key={step.id}
@@ -722,14 +722,14 @@ function App() {
                     <nav className="plan-tools" aria-label="Plan tools">
                       {[
                         ["Overview", ""],
-                        ["Build plan", "/sections/" + sectionIndex],
-                        ["Review & export", "/review"],
+                        ["Build Plan", "/sections/" + sectionIndex],
+                        ["Review & Export", "/review"],
 
-                        ["Launch checklist", "/launch"],
+                        ["Launch Checklist", "/launch"],
                       ].map(([label, suffix]) => (!planComplete && ["/review", "/launch"].includes(suffix) ? <button type="button" className="plan-tool is-locked" disabled key={label} title="Review all 8 sections to unlock"><Lock size={15} aria-hidden="true" />{label}<span className="sr-only">Locked until all sections are reviewed</span></button> : (
                         <NavLink key={label} end={suffix === ""} to={"/plans/" + active._id + suffix}
-                          className={({isActive}) => "plan-tool" + ((isActive || (label === "Build plan" && page === "editor")) ? " is-active" : "")}
-                          aria-current={label === "Build plan" && page === "editor" ? "page" : undefined}>
+                          className={({isActive}) => "plan-tool" + ((isActive || (label === "Build Plan" && page === "editor")) ? " is-active" : "")}
+                          aria-current={label === "Build Plan" && page === "editor" ? "page" : undefined}>
                           {label}
                         </NavLink>
                       )))}
@@ -753,7 +753,7 @@ function App() {
               ) : params.planId && connectionError ? (
                 <section className="empty-state connection-recovery" role="alert">
                   <Bee size={100} />
-                  <h2>Your plan couldn’t load yet</h2>
+                  <h2>Your Plan couldn’t load yet</h2>
                   <p>We couldn’t connect to your account. Retry to load your saved plan.</p>
                   <Button onClick={() => window.location.reload()}>Retry connection</Button>
                 </section>
