@@ -753,7 +753,7 @@ function App() {
               ) : params.planId && connectionError ? (
                 <section className="empty-state connection-recovery" role="alert">
                   <Bee size={100} />
-                  <h2>Your Plan couldn’t load yet</h2>
+                  <h2>Your plan couldn’t load yet</h2>
                   <p>We couldn’t connect to your account. Retry to load your saved plan.</p>
                   <Button onClick={() => window.location.reload()}>Retry connection</Button>
                 </section>

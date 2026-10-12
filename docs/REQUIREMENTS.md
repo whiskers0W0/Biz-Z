@@ -309,3 +309,7 @@ Post-fix production build, lint and diff checks also passed.
 ### Remove repetitive demo interface copy (12 October 2026)
 
 Removed the workspace demo banner, guest-profile demo subtitle, landing configuration note, and repeated device-storage notices in Money Lab. Checklist sign-in copy no longer exposes database implementation details. Kept the accurate storage distinction in Help and the sample-idea label so examples are not presented as live AI results. Corrected Help export instructions to require eight reviewed sections. Build passed; storage/auth behavior is unchanged.
+
+### Consistent navigation capitalization (12 October 2026)
+
+Standardized sidebar labels, breadcrumbs, planning tabs and matching destinations to title case, including Explore Ideas and My Business Plans. Production build and diff checks passed; existing bundle-size warning remains.
