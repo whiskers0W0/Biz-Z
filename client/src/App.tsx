@@ -462,7 +462,7 @@ function App() {
             <span className="avatar large">{user?.name.charAt(0) || "Y"}</span>
             <div>
               <h2>{user?.name || "Your builder profile"}</h2>
-              <p>{user?.email || "Exploring in local demo mode"}</p>
+              {user?.email && <p>{user.email}</p>}
             </div>
           </div>
           <h3>Your interests</h3>
@@ -666,17 +666,6 @@ function App() {
               </div>
             </header>
             <main>
-              {isDemo && !connectionError && (
-                <div className="demo-line">
-                  <span>
-                    <span className="status-dot" />
-                    Demo mode · saved on this device
-                  </span>
-                  <button onClick={() => setAuthMode("register")}>
-                    Save with an account <ArrowRight size={13} />
-                  </button>
-                </div>
-              )}
               {[
                 "start",
                 "onboarding",

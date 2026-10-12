@@ -194,11 +194,10 @@ export function Workbench({
         <PageHeading
           eyebrow="YOUR PLAN TOOLS"
           title={mode === "money" ? "Money lab" : "Launch checklist"}
-          text="Sign in to save your costs, assumptions and tasks to your account."
+          text="Sign in to create your launch checklist."
         />
         <p className="soft-note">
-          These tools use your saved database records. Open your account from
-          the sidebar to continue.
+          Open your account from the sidebar to continue.
         </p>
       </>
     );

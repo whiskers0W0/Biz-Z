@@ -188,7 +188,7 @@ export function MoneyLab({
       }
       setId(record._id);
       form.reset(v);
-      setNotice(isDemo ? "Saved on this device." : "Calculation saved.");
+      setNotice("Calculation saved.");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -397,7 +397,6 @@ export function MoneyLab({
                 )}
                 <small>
                   {dirty ? "Unsaved changes" : id ? "Saved" : ""}
-                  {isDemo ? " · Stored on this device" : ""}
                 </small>
               </div>
             </section>
@@ -412,11 +411,6 @@ export function MoneyLab({
               New calculation
             </Button>
           </div>
-          <p className="soft-note">
-            {isDemo
-              ? "Saved on this browser only."
-              : "Private to your account."}
-          </p>
           {!saved.length ? (
             <p>
               No calculations saved yet. Try a calculator and give your scenario

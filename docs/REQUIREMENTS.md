@@ -305,3 +305,7 @@ Reviewed route mapping and completion gates, shared navigation, landing/start, p
 
 Production build and lint passed before fixes; all 13 automated tests passed outside the sandbox using disposable MongoDB (sandbox startup failed). Browser access to the local dev app failed with connection-refused/timeout, so an all-page interactive/viewport audit and live Maps/Gemini/PDF checks are not verified. Existing bundle-size warning remains. Previous export/logo commit 98d3c91 was confirmed pushed.
 Post-fix production build, lint and diff checks also passed.
+
+### Remove repetitive demo interface copy (12 October 2026)
+
+Removed the workspace demo banner, guest-profile demo subtitle, landing configuration note, and repeated device-storage notices in Money Lab. Checklist sign-in copy no longer exposes database implementation details. Kept the accurate storage distinction in Help and the sample-idea label so examples are not presented as live AI results. Corrected Help export instructions to require eight reviewed sections. Build passed; storage/auth behavior is unchanged.

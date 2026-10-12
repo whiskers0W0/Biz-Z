@@ -181,10 +181,6 @@ export function Landing({
           <Button onClick={onStart}>
             Let’s build something <ArrowRight size={18} />
           </Button>
-          <small>
-            Try the local demo now. Accounts and AI need a configured server
-            connection.
-          </small>
         </section>
       </main>
       <footer className="landing-footer">
@@ -371,12 +367,12 @@ export function HelpPage({ onStart }: { onStart: () => void }) {
           {
             id: "export",
             title: "5. Preview and export",
-            body: "Preview and download your PDF anytime. Unfinished sections are labeled.",
+            body: "Review all eight sections to unlock your PDF download.",
           },
           {
             id: "storage",
             title: "Where is my work saved?",
-            body: "Demo plans stay in this browser. Account plans save online. Demo plans do not transfer when you sign in.",
+            body: "Without signing in, plans stay in this browser. Account plans save online. Existing browser plans do not transfer when you sign in.",
           },
         ].map((item) => (
           <section key={item.id}>
