@@ -3242,3 +3242,24 @@ small { font-size: 13px; }
   .sidebar .nav-item { min-height: 36px; padding-block: 6px; }
   .sidebar .user-card { padding-top: 6px; margin-top: 4px; }
 }
+
+/* Onboarding confirmation: group preferences before practical constraints. */
+.onboard-form.review-profile { max-width: 760px; display: grid; gap: 22px; padding: 28px; }
+.profile-summary-group { min-width: 0; }
+.review-profile .profile-summary-group h3 { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; font-size: 16px; }
+.profile-summary-group h3 svg { color: #85679f; flex-shrink: 0; }
+.review-profile .chips { margin: 0; gap: 8px; }
+.review-profile .pill { padding: 8px 12px; font-size: 14px; line-height: 1.5; white-space: normal; }
+.profile-summary-work .pill { background: #edf4e2; color: #526c39; }
+.profile-summary-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding-top: 22px; border-top: 1px solid #e2e7da; }
+.profile-summary-facts > div { background: #f7f8f2; border: 1px solid #e5e9dc; border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.profile-summary-facts dt { font-size: 13px; color: #626e57; margin-bottom: 6px; }
+.profile-summary-facts dd { margin: 0; font-size: 16px; font-weight: 800; color: #35442d; overflow-wrap: anywhere; }
+@media(max-width:480px) { .onboard-form.review-profile { padding: 20px; gap: 20px; } .profile-summary-facts { grid-template-columns: 1fr; } }
+.export-logo-options { padding:20px; border:1px solid #dfe5d5; border-radius:16px; background:#fffef8; margin:16px 0; }
+.export-logo-options label { margin:0; max-width:540px; }
+.export-logo-options input { max-width:100%; }
+.export-cover-logo { display:block; width:auto; height:auto; max-width:180px; max-height:140px; object-fit:contain; margin:0 auto 28px; }
+.ideas-banner.is-finding-ideas > .zee-mascot-frame { animation: idea-bee-float 1.8s ease-in-out infinite; }
+@keyframes idea-bee-float { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-9px) rotate(3deg); } }
+@media(prefers-reduced-motion:reduce) { .ideas-banner.is-finding-ideas > .zee-mascot-frame { animation:none; } }

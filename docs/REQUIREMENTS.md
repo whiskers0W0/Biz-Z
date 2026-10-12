@@ -294,3 +294,7 @@ Removed the dashboard rail tagline. Increased explicit 7–12px interface text s
 ### Sidebar viewport-height correction (10 October 2026)
 
 Removed the independent sidebar scroll treatment. Reduced navigation/logo/account spacing, removed the secondary decorative tip sentence, and added height-based rules that hide the decorative tip and then branding on short screens while retaining navigation, help, and account actions. Text sizes remain readable. Production build passed; browser viewport verification remains pending.
+
+### Export cover and pending interface refinements (12 October 2026)
+
+Review & export accepts an optional local PNG/JPG logo up to 5 MB, validates decoding and image dimensions, previews it, supports removal, and preserves proportions on the PDF cover. Logo selection is scoped to the current plan and current view, not persisted to the account. The cover uses centered business identity and a formal Business Plan subtitle; removed the generated date and Biz-Z credit. Body typography, justified paragraphs, section pagination and contents remain, with a restrained ruled footer. Logo-free export remains supported. Profile confirmation now groups preferences and labels location/time/budget separately. Zee floats gently while ideas load, respecting reduced motion. Production build passed; live PDF rendering and browser visual verification remain pending.

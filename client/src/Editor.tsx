@@ -21,7 +21,7 @@ import {
   Sparkles,
   Pencil,
 } from "lucide-react";
-import { LoadingScreen, Bee, Button, Modal, PageHeading } from "./components";
+import { LoadingScreen, Button, Modal, PageHeading } from "./components";
 import { api } from "./data";
 import type { Plan, Profile, Section } from "./data";
 
@@ -501,6 +501,25 @@ export function Review({
 }) {
   const [exporting,setExporting]=useState(false);
   const [exportError,setExportError]=useState("");
+  const [logo,setLogo]=useState<{data:string;width:number;height:number;planId:string} | null>(null);
+  const [logoError,setLogoError]=useState("");
+  const [logoLoading,setLogoLoading]=useState(false);
+  const coverLogo = logo?.planId === plan._id ? logo : null;
+  async function uploadLogo(file?:File) {
+    if (!file) return;
+    setLogoError("");
+    if (!['image/png','image/jpeg'].includes(file.type) || file.size > 5*1024*1024) {
+      setLogoError("Choose a PNG or JPG under 5 MB."); return;
+    }
+    setLogoLoading(true);
+    try {
+      const data = await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file);});
+      const img = new Image(); img.src=data; await img.decode();
+      if (!img.naturalWidth || !img.naturalHeight || img.naturalWidth*img.naturalHeight>25000000) throw Error();
+      setLogo({data,width:img.naturalWidth,height:img.naturalHeight,planId:plan._id});
+    } catch { setLogoError("This image could not be read. Try another PNG or JPG."); }
+    finally { setLogoLoading(false); }
+  }
   const reviewed = plan.sections.filter((s) => s.status === "reviewed").length;
   const canExport = plan.sections.length === 8 && plan.sections.every(s => s.status === "reviewed" && s.draft.trim());
   async function download() {
@@ -528,11 +547,18 @@ export function Review({
       y += 5;
     }
     doc.setFont("times", "normal");
-    write("BUSINESS PLAN", 12);
-    write(exportPlan.name, 24);
-    write(exportPlan.description, 11);
-    write("Prepared with Biz-Z", 10);
-    write(new Date().toLocaleDateString(), 10);
+    if (coverLogo) {
+      const scale=Math.min(60/coverLogo.width,45/coverLogo.height);
+      const w=coverLogo.width*scale,h=coverLogo.height*scale;
+      doc.addImage(coverLogo.data,(210-w)/2,45,w,h);
+    }
+    doc.setFont("times","bold"); doc.setFontSize(26);
+    const titleLines=doc.splitTextToSize(exportPlan.name,160);
+    doc.text(titleLines,105,coverLogo?110:85,{align:"center",lineHeightFactor:1.2});
+    const subtitleY=(coverLogo?110:85)+titleLines.length*11+12;
+    doc.setDrawColor(150);doc.line(75,subtitleY-7,135,subtitleY-7);
+    doc.setFont("times","normal");doc.setFontSize(14);
+    doc.text("BUSINESS PLAN",105,subtitleY,{align:"center"});
     doc.addPage();
     const contentsPage = doc.getNumberOfPages();
     const contents: {title:string;page:number}[] = [];
@@ -551,7 +577,8 @@ export function Review({
     const pages=doc.getNumberOfPages();
     for(let page=2;page<=pages;page++) {
       doc.setPage(page);doc.setFontSize(9);doc.setTextColor(100);
-      doc.text("Biz-Z | Business plan",20,287);doc.text(String(page),190,287,{align:"right"});
+      doc.setFont("times","normal");doc.setDrawColor(200);doc.line(20,281,190,281);
+      doc.text("Business Plan",20,287);doc.text(String(page),190,287,{align:"right"});
     }
     doc.save(`${plan.name.replace(/[^a-z0-9]/gi, "-")}-business-plan.pdf`);
     } catch {setExportError("The PDF could not be created. Your saved plan is safe. Please try again.");} finally {setExporting(false);}
@@ -576,18 +603,23 @@ export function Review({
             ? "Ready for your next move"
             : "Review all 8 sections to unlock export"}
         </span>
-        <Button onClick={download} disabled={!canExport || exporting}>
+        <Button onClick={download} disabled={!canExport || exporting || logoLoading}>
           <Download size={17} />
           Download PDF
         </Button>
       </div>
+      <div className="export-logo-options">
+        <label>Upload logo (optional)<input type="file" accept="image/png,image/jpeg" disabled={exporting || logoLoading} onChange={e=>{void uploadLogo(e.target.files?.[0]);e.target.value="";}} /><small>PNG or JPG, up to 5 MB. Used for this export only.</small></label>
+        {logoLoading && <p role="status">Preparing logo…</p>}
+        {logoError && <p className="error-text" role="alert">{logoError}</p>}
+        {coverLogo && <button className="text-button" disabled={exporting} onClick={()=>setLogo(null)}>Remove logo</button>}
+      </div>
       {canExport && <NextSteps plan={plan} />}
       <div className="review-document">
         <div className="document-cover">
-          <span className="eyebrow">A BUSINESS PLAN BY YOU</span>
+          {coverLogo && <img className="export-cover-logo" src={coverLogo.data} alt="Business logo" />}
           <h1>{plan.name}</h1>
-          <p>{plan.description}</p>
-          <Bee size={100} happy />
+          <p>BUSINESS PLAN</p>
         </div>
         {[6,0,2,1,3,4,5,7].map((i, position) => ({s:plan.sections[i],i,position})).map(({s,i,position}) => (
           <section key={s.title}>

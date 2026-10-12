@@ -179,7 +179,8 @@ export function Onboarding({
       )}
       {step === 4 && (
         <div className="onboard-form review-profile">
-          <h3>Your sparks</h3>
+          <section className="profile-summary-group">
+          <h3><Sparkles size={18} aria-hidden="true" />Your interests</h3>
           <div className="chips">
             {data.interests.map((t) => (
               <span className="pill" key={t}>
@@ -187,7 +188,9 @@ export function Onboarding({
               </span>
             ))}
           </div>
-          <h3>Your personality</h3>
+          </section>
+          <section className="profile-summary-group">
+          <h3><Lightbulb size={18} aria-hidden="true" />Your personality</h3>
           <div className="chips">
             {data.traits.map((t) => (
               <span className="pill lavender" key={t}>
@@ -195,14 +198,16 @@ export function Onboarding({
               </span>
             ))}
           </div>
-          <p>
-            {data.location} · {data.hours} hours/week
-          </p>
-          <p>
-            {data.currency} {data.capital.toLocaleString()} starting capital ·{" "}
-            {data.currency} {data.monthly.toLocaleString()}/month budget
-          </p>
-          <h3>Your working style</h3><div className="chips">{data.workStyles?.length ? data.workStyles.map(t=><span className="pill lavender" key={t}>{t}</span>) : <p>No work preferences selected.</p>}</div>
+          </section>
+          <section className="profile-summary-group profile-summary-work">
+          <h3><Check size={18} aria-hidden="true" />Your working style</h3><div className="chips">{data.workStyles?.length ? data.workStyles.map(t=><span className="pill" key={t}>{t}</span>) : <p>No work preferences selected.</p>}</div>
+          </section>
+          <dl className="profile-summary-facts">
+            <div><dt>Business location</dt><dd>{data.location || "Not selected"}</dd></div>
+            <div><dt>Time available</dt><dd>{data.hours} hours / week</dd></div>
+            <div><dt>Starting capital</dt><dd>{data.currency} {data.capital.toLocaleString()}</dd></div>
+            <div><dt>Monthly budget</dt><dd>{data.currency} {data.monthly.toLocaleString()}</dd></div>
+          </dl>
         </div>
       )}
       {Object.entries(profileErrors).map(([key, e]) => (
@@ -299,7 +304,7 @@ export function Ideas({
         title="Find your kind of business"
         text="AI ideas, ranked for your interests, work preferences, budget and time."
       />
-      <div className="ideas-banner">
+      <div className={`ideas-banner${loading ? " is-finding-ideas" : ""}`}>
         <Bee size={84} />
         <div>
           <h3>{loading ? "Zee is finding your matches…" : ideas.length ? "Ideas for you" : "Find your best fit"}</h3>
