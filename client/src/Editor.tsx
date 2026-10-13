@@ -501,7 +501,8 @@ export function Review({
 }) {
   const [exporting,setExporting]=useState(false);
   const [exportError,setExportError]=useState("");
-  const [logo,setLogo]=useState<{data:string;width:number;height:number;planId:string} | null>(null);
+  const [logo,setLogo]=useState<{data:string;width:number;height:number;planId:string;name:string} | null>(null);
+  const logoInput = useRef<HTMLInputElement>(null);
   const [logoError,setLogoError]=useState("");
   const [logoLoading,setLogoLoading]=useState(false);
   const coverLogo = logo?.planId === plan._id ? logo : null;
@@ -516,7 +517,7 @@ export function Review({
       const data = await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file);});
       const img = new Image(); img.src=data; await img.decode();
       if (!img.naturalWidth || !img.naturalHeight || img.naturalWidth*img.naturalHeight>25000000) throw Error();
-      setLogo({data,width:img.naturalWidth,height:img.naturalHeight,planId:plan._id});
+      setLogo({data,width:img.naturalWidth,height:img.naturalHeight,planId:plan._id,name:file.name});
     } catch { setLogoError("This image could not be read. Try another PNG or JPG."); }
     finally { setLogoLoading(false); }
   }
@@ -609,10 +610,16 @@ export function Review({
         </Button>
       </div>
       <div className="export-logo-options">
-        <label>Upload logo (optional)<input type="file" accept="image/png,image/jpeg" disabled={exporting || logoLoading} onChange={e=>{void uploadLogo(e.target.files?.[0]);e.target.value="";}} /><small>PNG or JPG, up to 5 MB. Used for this export only.</small></label>
+        <label htmlFor="export-logo-upload">Upload logo (optional)</label>
+        <input ref={logoInput} id="export-logo-upload" className="sr-only" type="file" accept="image/png,image/jpeg" disabled={exporting || logoLoading} onChange={e=>{void uploadLogo(e.target.files?.[0]);e.target.value="";}} />
+        <div className="export-logo-selection">
+          <Button variant="secondary" disabled={exporting || logoLoading} onClick={()=>logoInput.current?.click()}>{coverLogo ? "Replace logo" : "Choose logo"}</Button>
+          <span className="export-logo-filename" role="status">{coverLogo?.name || "No logo selected"}</span>
+        </div>
+        <small>PNG or JPG, up to 5 MB. Used for this export only.</small>
         {logoLoading && <p role="status">Preparing logo…</p>}
         {logoError && <p className="error-text" role="alert">{logoError}</p>}
-        {coverLogo && <button className="text-button" disabled={exporting} onClick={()=>setLogo(null)}>Remove logo</button>}
+        {coverLogo && <button className="text-button" disabled={exporting || logoLoading} onClick={()=>{setLogo(null);setLogoError("");}}>Remove logo</button>}
       </div>
       {canExport && <NextSteps plan={plan} />}
       <div className="review-document">

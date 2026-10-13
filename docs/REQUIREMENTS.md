@@ -313,3 +313,7 @@ Removed the workspace demo banner, guest-profile demo subtitle, landing configur
 ### Consistent navigation capitalization (12 October 2026)
 
 Standardized sidebar labels, breadcrumbs, planning tabs and matching destinations to title case, including Explore Ideas and My Business Plans. Production build and diff checks passed; existing bundle-size warning remains.
+
+### Logo upload filename feedback (13 October 2026)
+
+Replaced native file-selection text with a logo chooser and filename stored alongside the successfully decoded image. Replace and remove actions reflect the logo used by the PDF preview/export; cancelling or rejecting a replacement keeps the existing logo. Production build and diff checks passed. Interactive browser verification remains pending.
